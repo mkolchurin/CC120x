@@ -1,0 +1,5 @@
+hal_spi_rf_trxeb.c:75:6:trxRfSpiInterfaceInit	16	static
+hal_spi_rf_trxeb.c:181:12:trx8BitRegAccess	24	static
+hal_spi_rf_trxeb.c:220:12:trx16BitRegAccess	24	static
+hal_spi_rf_trxeb.c:255:12:trxSpiCmdStrobe	24	static
+hal_spi_rf_trxeb.c:296:13:trxReadWriteBurstSingle	24	static
