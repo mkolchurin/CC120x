@@ -72,23 +72,19 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	CC120x_Init(hspi3, GPIOA, GPIO_PIN_4);
+	CC120x_WriteStrobe(SRES);
+	HAL_Delay(10);
+	CC120x_WriteStrobe(SRES);
+	CC120x_WriteStrobe(0x3A);
+	CC120x_WriteStrobe(0x3B);
+	CC120x_WriteStrobe(0x36);
 	while (1) {
-		CC120x_WriteStrobe(SRES);
-		HAL_Delay(10);
-		CC120x_WriteStrobe(SRES);
-		CC120x_WriteStrobe(0x3A);
-		CC120x_WriteStrobe(0x3B);
-		CC120x_WriteStrobe(0x36);
-
-		CC120x_ReadSingleReg(0x02, 1, 0xFFFF);
-		CC120x_WriteSingleReg(0x02, 0x25, 1);
-		CC120x_ReadSingleReg(0x02, 1, 0xFFFF);
-
+		//registerSetting_t;
+		//CC120x_8bitAccess(0x0C, 1, 0xFFFF);
+		//CC120x_WriteSingleReg(0x0C, 0x5D, 1);
+		//CC120x_8bitAccess(0x0C, 1, 0xFFFF);
+		CC120x_ReadReg(0x2F20, 1);
 		HAL_Delay(100);
-//		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
-//		HAL_SPI_Transmit(&hspi3, &pTxData, Size, Timeout);
-//		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-//		HAL_Delay(100);
 	}
 	/* USER CODE END WHILE */
 

@@ -1,5 +1,0 @@
-CC120x.c:7:6:CC120x_Init	8	static
-CC120x.c:15:19:CC120x_WriteStrobe	24	static
-CC120x.c:21:9:CC120x_ReadSingleReg	32	static
-CC120x.c:31:19:CC120x_WriteSingleReg	32	static
-CC120x.c:42:19:CC120x_Write	24	static

@@ -1,6 +1,0 @@
-cc120x_spi.c:66:12:cc120xSpiReadReg	32	static
-cc120x_spi.c:104:12:cc120xSpiWriteReg	32	static
-cc120x_spi.c:139:12:cc120xSpiWriteTxFifo	24	static
-cc120x_spi.c:160:12:cc120xSpiReadRxFifo	24	static
-cc120x_spi.c:191:12:cc120xGetTxStatus	8	static
-cc120x_spi.c:223:12:cc120xGetRxStatus	8	static
