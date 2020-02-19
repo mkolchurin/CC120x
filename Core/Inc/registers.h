@@ -232,14 +232,16 @@ typedef struct
   uint8_t   data;
 }registerSetting_t;
 
+
 static const registerSetting_t preferredSettings[]=
 {
-  {IOCFG2,            0x06},
+  {IOCFG2,            0x32},
+  {IOCFG0,            0x00},
   {SYNC_CFG1,         0xAC},
   {DEVIATION_M,       0xD7},
   {MODCFG_DEV_E,      0x1A},
   {DCFILT_CFG,        0x13},
-  {PREAMBLE_CFG0,     0xE3},
+  {PREAMBLE_CFG0,     0x8A},
   {IQIC,              0x00},
   {CHAN_BW,           0x0D},
   {MDMCFG0,           0x02},
@@ -249,12 +251,17 @@ static const registerSetting_t preferredSettings[]=
   {AGC_REF,           0x35},
   {AGC_CS_THR,        0xEC},
   {AGC_CFG3,          0x31},
-  {AGC_CFG1,          0x24},
-  {AGC_CFG0,          0x9F},
-  {FIFO_CFG,          0x00},
+  {AGC_CFG1,          0x00},
+  {AGC_CFG0,          0x93},
+  {FIFO_CFG,          0x64},
+  {SETTLING_CFG,      0x03},
   {FS_CFG,            0x14},
+  {WOR_CFG0,          0x20},
+  {WOR_EVENT0_MSB,    0x01},
+  {WOR_EVENT0_LSB,    0xF3},
   {PKT_CFG2,          0x00},
   {PKT_CFG0,          0x20},
+  {RFEND_CFG0,        0x09},
   {ASK_CFG,           0xBF},
   {PKT_LEN,           0xFF},
   {IF_MIX_CFG,        0x1C},

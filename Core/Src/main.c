@@ -38,6 +38,23 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+void setRegisters(void) {
+	uint8_t array_size = (sizeof(preferredSettings)
+			/ sizeof(preferredSettings[0]));
+	uint8_t registers[array_size];
+
+	//write settings
+	for (int i = 0; i < array_size; i++) {
+		CC120x_WriteReg((preferredSettings[i].addr),
+				(preferredSettings[i].data));
+	}
+	HAL_Delay(10);
+	//read settings
+	for (int i = 0; i < array_size; i++) {
+		registers[i] = CC120x_ReadReg((preferredSettings[i].addr));
+	}
+	printf(registers);
+}
 /* USER CODE END 0 */
 
 /**
@@ -67,24 +84,67 @@ int main(void) {
 	MX_SPI3_Init();
 	MX_USART1_UART_Init();
 	/* USER CODE BEGIN 2 */
+
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	CC120x_Init(hspi3, GPIOA, GPIO_PIN_4);
 	CC120x_WriteStrobe(SRES);
-	HAL_Delay(10);
-	CC120x_WriteStrobe(SRES);
-	CC120x_WriteStrobe(0x3A);
-	CC120x_WriteStrobe(0x3B);
-	CC120x_WriteStrobe(0x36);
+	CC120x_WriteStrobe(SIDLE);
+	CC120x_WriteStrobe(SCAL);
+
+//	CC120x_Init(hspi3, GPIOB, GPIO_PIN_8);
+//	CC120x_WriteStrobe(SRES);
+//	CC120x_WriteStrobe(SIDLE);
+//	CC120x_WriteStrobe(SCAL);
+	HAL_Delay(100);
+
 	while (1) {
-		//registerSetting_t;
-		//CC120x_8bitAccess(0x0C, 1, 0xFFFF);
-		//CC120x_WriteSingleReg(0x0C, 0x5D, 1);
-		//CC120x_8bitAccess(0x0C, 1, 0xFFFF);
-		CC120x_ReadReg(0x2F20, 1);
-		HAL_Delay(100);
+//		setRegisters();
+//
+//
+//		CC120x_Init(hspi3, GPIOA, GPIO_PIN_4);
+//		setRegisters();
+//		HAL_Delay(100);
+//
+//		CC120x_WriteStrobe(SFTX);
+//		CC120x_WriteStrobe(STX);
+//		for (int i = 0; i < 16; i++)
+//			CC120x_WriteReg(0b00111111, 0x44);
+//
+//
+//
+//		HAL_Delay(100);
+//		CC120x_Init(hspi3, GPIOB, GPIO_PIN_8);
+//		CC120x_WriteStrobe(SFRX);
+//		CC120x_WriteStrobe(SRX);
+//
+//		CC120x_Init(hspi3, GPIOA, GPIO_PIN_4);
+//		CC120x_WriteStrobe(STX);
+//		uint8_t txfifo = CC120x_ReadReg(TXFIRST);
+//		HAL_Delay(500);
+//
+////
+////		while (txfifo != 0) {
+////			txfifo = CC120x_ReadReg(TXFIRST);
+////			CC120x_WriteReg(STX, 1);
+////			HAL_Delay(10);
+////		}
+//
+////		uint8_t rx = CC120x_ReadReg(0b00111111);
+//		CC120x_Init(hspi3, GPIOB, GPIO_PIN_8);
+//		CC120x_WriteStrobe(SIDLE);
+//
+//		uint8_t rxfifo[10];
+//		uint8_t rx1 = CC120x_ReadReg(RXFIRST);
+//		for (int i = 0; i < 9; i++)
+//			rxfifo[i] = CC120x_ReadReg(0b00111111);
+//
+
+
+		HAL_Delay(10);
+
 	}
 	/* USER CODE END WHILE */
 
