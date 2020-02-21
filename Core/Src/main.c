@@ -10,6 +10,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "CC120x.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -95,11 +96,11 @@ int main(void) {
 		CC120x_Init(hspi3, GPIOB, GPIO_PIN_8);
 
 		uint8_t regs[] = {0x12,0x13};
-		CC120x_Data d1 = CC120x_WriteBurstReg(0x0001, regs);
-		CC120x_Data d2 = CC120x_WriteSingleReg(0x1234, 0x05);
-		CC120x_Data d3 = CC120x_ReadSingleReg(0x0001);
-		CC120x_Data d4 = CC120x_ReadSingleReg(0x0002);
-		CC120x_Data d5 = CC120x_ReadSingleReg(0x1234);
+		CC120x_DataTypedef d1 = CC120x_WriteBurstReg(0x0001, regs);
+		CC120x_DataTypedef d2 = CC120x_WriteSingleReg(0x1234, 0x05);
+		CC120x_DataTypedef d3 = CC120x_ReadSingleReg(0x0001);
+		CC120x_DataTypedef d4 = CC120x_ReadSingleReg(0x0002);
+		CC120x_DataTypedef d5 = CC120x_ReadSingleReg(0x1234);
 
 		HAL_Delay(100);
 
