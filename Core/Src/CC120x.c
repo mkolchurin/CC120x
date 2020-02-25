@@ -1,6 +1,3 @@
-
-
-
 /*
  * TODO chip status byte
  * (received status) & 0x01110000 (0x70) = chip status byte
@@ -20,13 +17,9 @@
  * TODO receive package = (being RX state (flush SRX strobe), wait until status byte change to notRX state (for example, IDLE state))
  */
 
-
-
-
 #include "types.h"
 
 #include "CC120x.h"
-#include <CC120x_register_settings.h>
 
 
 SPI_HandleTypeDef spi;
@@ -63,18 +56,26 @@ cc120x_DataTypedef cc120x_8bitAccess(RWBit rw, Burst burst, uint8_t address,
 
 	cc120x_DataTypedef CC120x_data;
 
-	HAL_SPI_TransmitReceive(&spi, &address, &(CC120x_data.CC120x_Status), 1,
+	uint8_t rSatus;
+	HAL_SPI_TransmitReceive(&spi, &address, (uint8_t *)&rSatus, 1,
 	timeout);
 
 	if (rw == CC120x_Read)
 	{
-		CC120x_data.CC120x_Received = malloc(length);
-		HAL_SPI_Receive(&spi, CC120x_data.CC120x_Received, length, timeout);
+
+		uint8_t rBuf1[length];
+//		for (int i = 0; i < length; i++)
+		HAL_SPI_Receive(&spi, rBuf1, length, timeout);
+
+		CC120x_data.CC120x_Received = rBuf1;
 	}
 	if ((rw == CC120x_Write) && (burst == CC120x_burstAccess))
 	{
-		HAL_SPI_Transmit(&spi, txData, length, timeout);
+		for (uint16_t i = 0; i < length; i++)
+			HAL_SPI_Transmit(&spi, &txData[i], 1, timeout);
 	}
+
+	CC120x_data.CC120x_Status = (rSatus & 0b01110000);
 	return (CC120x_data);
 }
 
@@ -97,10 +98,11 @@ cc120x_DataTypedef cc120x_RegAccess(RWBit rwBit, Burst burst, uint16_t address,
 	uint8_t _address = (uint8_t) ((uint16_t) address & 0x00FF);
 
 	cs_low();
+
 	/*TODO while(SO != low state)
 	 * When CSn is pulled low, the MCU must wait until CC120X SO pin
 	 * goes low before starting to transfer the header byte
-	*/
+	 */
 	if (_command == 0x00)
 	{
 		_address = (_address | rwBit | burst);
@@ -169,10 +171,10 @@ void cc120x_WriteSettings(registerSetting_t *registerSettings)
 
 }
 
-cc120x_DataTypedef cc120x_WriteBurstReg(uint16_t startAddress, uint8_t *value)
+cc120x_DataTypedef cc120x_WriteBurstReg(uint16_t startAddress, uint8_t *value, uint16_t length)
 {
-	uint8_t length = sizeof(value) / sizeof(value[0]);
-	return (cc120x_RegAccess(CC120x_Write, CC120x_SingleAccess, startAddress,
+	//uint8_t length = sizeof(value) / sizeof(value[0]);
+	return (cc120x_RegAccess(CC120x_Write, CC120x_burstAccess, startAddress,
 			value, length));
 }
 

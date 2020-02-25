@@ -10,7 +10,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "CC120x.h"
-
+#include <CC120x_register_settings.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -95,52 +95,69 @@ int main(void)
 
 	while (1)
 	{
-		cc120x_Init(hspi3, GPIOB, GPIO_PIN_8);
+/*		cc120x_Init(hspi3, GPIOA, GPIO_PIN_4);
 
-		uint8_t regs[] =
-		{ 0x12, 0x13 };
-		cc120x_DataTypedef d1 = cc120x_WriteBurstReg(0x0001, regs);
-		cc120x_DataTypedef d2 = cc120x_WriteSingleReg(0x1234, 0x05);
-		cc120x_DataTypedef d3 = cc120x_ReadSingleReg(0x0001);
-		cc120x_DataTypedef d4 = cc120x_ReadSingleReg(0x0002);
-		cc120x_DataTypedef d5 = cc120x_ReadSingleReg(0x1234);
+		cc120x_WriteStrobe(SRES);
 
 		HAL_Delay(100);
 
-		/*
-		 CC120x_Init(hspi3, GPIOB, GPIO_PIN_8);
-		 CC120x_WriteStrobe(SRES);
-		 CC120x_WriteStrobe(SIDLE);
-		 CC120x_WriteStrobe(SCAL);
-		 CC120x_WriteSettings(preferredSettings);
+		uint8_t regs[] =
+		{ 0x02, 0x13 };*/
+		cc120x_DataTypedef d1, d2, d3, d4;/*
+		d1 = cc120x_WriteBurstReg(0x0001, regs, 2);
+		d2 = cc120x_WriteSingleReg(0x1234, 0x05);
+		d3 = cc120x_ReadSingleReg(0x0001);
 
-		 CC120x_WriteStrobe(SRX);
+		d4 = cc120x_ReadSingleReg(0x0002);
+//		d5 = cc120x_ReadSingleReg(0x1234);
+
+		HAL_Delay(100);
+
+		printf(d3.CC120x_Status);
+		printf(d3.CC120x_Received);
+		printf(d4.CC120x_Status);
+		printf(d4.CC120x_Received);*/
 
 
-		 CC120x_Init(hspi3, GPIOA, GPIO_PIN_4);
-		 CC120x_WriteStrobe(SRES);
-		 CC120x_WriteStrobe(SIDLE);
-		 CC120x_WriteStrobe(SCAL);
+		cc120x_Init(hspi3, GPIOB, GPIO_PIN_8);
+		cc120x_WriteStrobe(SRES);
+		 HAL_Delay(100);
+//		 cc120x_WriteStrobe(SIDLE);
+//		 cc120x_WriteStrobe(SCAL);
+		 cc120x_WriteSettings(preferredSettingsRX);
+
+		 cc120x_WriteStrobe(SRX);
+
+
+		 cc120x_Init(hspi3, GPIOA, GPIO_PIN_4);
+		 cc120x_WriteStrobe(SRES);
+//		 cc120x_WriteStrobe(SIDLE);
+//		 cc120x_WriteStrobe(SCAL);
 
 		 HAL_Delay(100);
 
 
-		 CC120x_WriteSettings(preferredSettings);
-		 registerSetting_t *rs = CC120x_ReadSettings();
+		 cc120x_WriteSettings(preferredSettingsTX);
+		 registerSetting_t *rs = cc120x_ReadSettings();
 
-		 HAL_Delay(10);
+		 HAL_Delay(100);
 
 
 		 uint8_t txBuffer[] = { 'H', 'E', 'L', 'L', 'O' };
-		 CC120x_TransmitData(txBuffer);
+		 cc120x_TransmitData(txBuffer);
+
+		 HAL_Delay(100);
 
 
+		 cc120x_Init(hspi3, GPIOB, GPIO_PIN_8);
+		 cc120x_WriteStrobe(SIDLE);
+		 HAL_Delay(100);
+		 cc120x_DataTypedef rx = cc120x_ReceiveData();
+		 d1 = cc120x_ReadSingleReg(FIFO_NUM_RXBYTES);
 
-		 CC120x_Init(hspi3, GPIOB, GPIO_PIN_8);
-		 CC120x_Data rx = CC120x_ReceiveData();
+		 d2 = cc120x_RegAccess(CC120x_Read, CC120x_burstAccess, StdFIFO, NULL, 5);
+		 HAL_Delay(100);
 
-		 HAL_Delay(10);
-		 */
 	}
 	/* USER CODE END WHILE */
 

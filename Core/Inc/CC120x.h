@@ -6,11 +6,13 @@
 
 #include "types.h"
 
-typedef struct
+ struct registerSetting_t
 {
-  uint16_t  addr;
-  uint8_t   data;
-}registerSetting_t;
+	uint16_t addr;
+	uint8_t data;
+};
+typedef struct registerSetting_t registerSetting_t;
+
 
 typedef enum
 {
@@ -24,12 +26,13 @@ typedef enum
 	CC120x_Write = 0x00
 } RWBit;
 
-typedef struct
+struct cc120x_DataTypedef
 {
 	uint8_t CC120x_Status;
 	uint8_t *CC120x_Received;
-} cc120x_DataTypedef;
+};
 
+typedef struct cc120x_DataTypedef cc120x_DataTypedef;
 
 //STATE BYTE (SO_Byte & 0x10000000)
 #define STATE_CHIP_RDYn		0x00 // 0xxxxxxx
@@ -42,7 +45,6 @@ typedef struct
 #define STATE_SETTLING		0x50 // x101xxxx
 #define STATE_RX_FIFO_ERROR	0x60 // x110xxxx
 #define STATE_TX_FIFO_ERROR	0x70 // x111xxxx
-
 
 //STROBES
 #define SRES	0x30
@@ -271,8 +273,6 @@ typedef struct
 #define AES_BUFFER1 0x2FFE //Advanced Encryption Standard Buffer [15:8]
 #define AES_BUFFER0 0x2FFF //Advanced Encryption Standard Buffer [7:0]
 
-
-
 void cs_low(void);
 void cs_high(void);
 void cc120x_Init(SPI_HandleTypeDef hspi, GPIO_TypeDef *GPIOPort,
@@ -287,7 +287,7 @@ cc120x_DataTypedef cc120x_TransmitData(uint8_t *txBuffer);
 cc120x_DataTypedef cc120x_WriteStrobe(uint8_t command);
 cc120x_DataTypedef cc120x_WriteSingleReg(uint16_t address, uint8_t value);
 void CC120xWriteSettings(registerSetting_t *registerSettings);
-cc120x_DataTypedef cc120x_WriteBurstReg(uint16_t startAddress, uint8_t *value);
+cc120x_DataTypedef cc120x_WriteBurstReg(uint16_t startAddress, uint8_t *value, uint16_t length);
 cc120x_DataTypedef cc120x_ReadSingleReg(uint16_t address);
 cc120x_DataTypedef cc120x_ReadBurstReg(uint16_t address, uint16_t length);
 registerSetting_t* cc120x_ReadSettings(void);
