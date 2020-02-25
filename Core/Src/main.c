@@ -38,30 +38,33 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-//void setRegisters(void) {
-//	uint8_t array_size = (sizeof(preferredSettings)
-//			/ sizeof(preferredSettings[0]));
-//	uint8_t registers[array_size];
-//
-//	//write settings
-//	for (int i = 0; i < array_size; i++) {
-//		CC120x_WriteReg((preferredSettings[i].addr),
-//				(preferredSettings[i].data));
-//	}
-//	HAL_Delay(10);
-//	//read settings
-//	for (int i = 0; i < array_size; i++) {
-//		registers[i] = CC120x_ReadReg((preferredSettings[i].addr));
-//	}
-//	printf(registers);
-//}
+/*
+ void setRegisters(void) {
+ uint8_t array_size = (sizeof(preferredSettings)
+ / sizeof(preferredSettings[0]));
+ uint8_t registers[array_size];
+
+ //write settings
+ for (int i = 0; i < array_size; i++) {
+ CC120x_WriteReg((preferredSettings[i].addr),
+ (preferredSettings[i].data));
+ }
+ HAL_Delay(10);
+ //read settings
+ for (int i = 0; i < array_size; i++) {
+ registers[i] = CC120x_ReadReg((preferredSettings[i].addr));
+ }
+ printf(registers);
+ }
+ */
 /* USER CODE END 0 */
 
 /**
  * @brief  The application entry point.
  * @retval int
  */
-int main(void) {
+int main(void)
+{
 	/* USER CODE BEGIN 1 */
 	/* USER CODE END 1 */
 
@@ -90,54 +93,54 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 
+	while (1)
+	{
+		cc120x_Init(hspi3, GPIOB, GPIO_PIN_8);
 
-
-	while (1) {
-		CC120x_Init(hspi3, GPIOB, GPIO_PIN_8);
-
-		uint8_t regs[] = {0x12,0x13};
-		CC120x_DataTypedef d1 = CC120x_WriteBurstReg(0x0001, regs);
-		CC120x_DataTypedef d2 = CC120x_WriteSingleReg(0x1234, 0x05);
-		CC120x_DataTypedef d3 = CC120x_ReadSingleReg(0x0001);
-		CC120x_DataTypedef d4 = CC120x_ReadSingleReg(0x0002);
-		CC120x_DataTypedef d5 = CC120x_ReadSingleReg(0x1234);
+		uint8_t regs[] =
+		{ 0x12, 0x13 };
+		cc120x_DataTypedef d1 = cc120x_WriteBurstReg(0x0001, regs);
+		cc120x_DataTypedef d2 = cc120x_WriteSingleReg(0x1234, 0x05);
+		cc120x_DataTypedef d3 = cc120x_ReadSingleReg(0x0001);
+		cc120x_DataTypedef d4 = cc120x_ReadSingleReg(0x0002);
+		cc120x_DataTypedef d5 = cc120x_ReadSingleReg(0x1234);
 
 		HAL_Delay(100);
 
+		/*
+		 CC120x_Init(hspi3, GPIOB, GPIO_PIN_8);
+		 CC120x_WriteStrobe(SRES);
+		 CC120x_WriteStrobe(SIDLE);
+		 CC120x_WriteStrobe(SCAL);
+		 CC120x_WriteSettings(preferredSettings);
 
-//		//
-//		CC120x_Init(hspi3, GPIOB, GPIO_PIN_8);
-//		CC120x_WriteStrobe(SRES);
-//		CC120x_WriteStrobe(SIDLE);
-//		CC120x_WriteStrobe(SCAL);
-//		CC120x_WriteSettings(preferredSettings);
-//
-//		CC120x_WriteStrobe(SRX);
-//
-//		//
-//		CC120x_Init(hspi3, GPIOA, GPIO_PIN_4);
-//		CC120x_WriteStrobe(SRES);
-//		CC120x_WriteStrobe(SIDLE);
-//		CC120x_WriteStrobe(SCAL);
-//
-//		HAL_Delay(100);
-//
-//
-//		CC120x_WriteSettings(preferredSettings);
-//		registerSetting_t *rs = CC120x_ReadSettings();
-//
-//		HAL_Delay(10);
-//
-//		//
-//		uint8_t txBuffer[] = { 'H', 'E', 'L', 'L', 'O' };
-//		CC120x_TransmitData(txBuffer);
-//
-//
-//		//
-//		CC120x_Init(hspi3, GPIOB, GPIO_PIN_8);
-//		CC120x_Data rx = CC120x_ReceiveData();
-//
-//		HAL_Delay(10);
+		 CC120x_WriteStrobe(SRX);
+
+
+		 CC120x_Init(hspi3, GPIOA, GPIO_PIN_4);
+		 CC120x_WriteStrobe(SRES);
+		 CC120x_WriteStrobe(SIDLE);
+		 CC120x_WriteStrobe(SCAL);
+
+		 HAL_Delay(100);
+
+
+		 CC120x_WriteSettings(preferredSettings);
+		 registerSetting_t *rs = CC120x_ReadSettings();
+
+		 HAL_Delay(10);
+
+
+		 uint8_t txBuffer[] = { 'H', 'E', 'L', 'L', 'O' };
+		 CC120x_TransmitData(txBuffer);
+
+
+
+		 CC120x_Init(hspi3, GPIOB, GPIO_PIN_8);
+		 CC120x_Data rx = CC120x_ReceiveData();
+
+		 HAL_Delay(10);
+		 */
 	}
 	/* USER CODE END WHILE */
 
@@ -149,9 +152,12 @@ int main(void) {
  * @brief System Clock Configuration
  * @retval None
  */
-void SystemClock_Config(void) {
-	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
-	RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
+void SystemClock_Config(void)
+{
+	RCC_OscInitTypeDef RCC_OscInitStruct =
+	{ 0 };
+	RCC_ClkInitTypeDef RCC_ClkInitStruct =
+	{ 0 };
 
 	/** Configure the main internal regulator output voltage
 	 */
@@ -167,7 +173,8 @@ void SystemClock_Config(void) {
 	RCC_OscInitStruct.PLL.PLLN = 400;
 	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
 	RCC_OscInitStruct.PLL.PLLQ = 4;
-	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+	{
 		Error_Handler();
 	}
 	/** Initializes the CPU, AHB and APB busses clocks
@@ -179,7 +186,8 @@ void SystemClock_Config(void) {
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
 	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK) {
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
+	{
 		Error_Handler();
 	}
 }
@@ -191,7 +199,8 @@ void SystemClock_Config(void) {
  * @brief  This function is executed in case of error occurrence.
  * @retval None
  */
-void Error_Handler(void) {
+void Error_Handler(void)
+{
 	/* USER CODE BEGIN Error_Handler_Debug */
 	/* USER CODE END Error_Handler_Debug */
 }
