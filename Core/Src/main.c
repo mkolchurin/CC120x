@@ -38,25 +38,31 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-/*
- void setRegisters(void) {
- uint8_t array_size = (sizeof(preferredSettings)
- / sizeof(preferredSettings[0]));
- uint8_t registers[array_size];
+void dataAccessTest(void)
+{
+	cc120x_Init(hspi3, GPIOA, GPIO_PIN_4);
+	cc120x_WriteStrobe(SRES);
+	HAL_Delay(100);
 
- //write settings
- for (int i = 0; i < array_size; i++) {
- CC120x_WriteReg((preferredSettings[i].addr),
- (preferredSettings[i].data));
- }
- HAL_Delay(10);
- //read settings
- for (int i = 0; i < array_size; i++) {
- registers[i] = CC120x_ReadReg((preferredSettings[i].addr));
- }
- printf(registers);
- }
- */
+	uint16_t address = FS_DIG0;
+	uint8_t txData[] =
+	{ 0xA0 };
+	uint8_t length = 1;
+
+	cs_low();
+	cc120x_DataTypedef dataTX = cc120x_RegAccess(CC120x_Write,
+			CC120x_SingleAccess, address, txData, length);
+
+	cs_high();
+
+	cs_low();
+	cc120x_DataTypedef dataRX = cc120x_RegAccess(CC120x_Read,
+			CC120x_SingleAccess, address, 0, length);
+	cs_high();
+
+	HAL_Delay(100);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -95,76 +101,22 @@ int main(void)
 
 	while (1)
 	{
-/*		cc120x_Init(hspi3, GPIOA, GPIO_PIN_4);
-
+		cc120x_Init(hspi3, GPIOA, GPIO_PIN_4);
 		cc120x_WriteStrobe(SRES);
+		HAL_Delay(100);
+		uint8_t settingsSize = (sizeof(preferredSettingsRX)
+				/ sizeof((preferredSettingsRX)[0]));
+		for (uint8_t i = 0; i < settingsSize; i++)
+			cc120x_WriteSettings(preferredSettingsRX[i]);
+		registerSetting_t *settings = cc120x_ReadSettings();
 
 		HAL_Delay(100);
-
-		uint8_t regs[] =
-		{ 0x02, 0x13 };*/
-		cc120x_DataTypedef d1, d2, d3, d4;/*
-		d1 = cc120x_WriteBurstReg(0x0001, regs, 2);
-		d2 = cc120x_WriteSingleReg(0x1234, 0x05);
-		d3 = cc120x_ReadSingleReg(0x0001);
-
-		d4 = cc120x_ReadSingleReg(0x0002);
-//		d5 = cc120x_ReadSingleReg(0x1234);
-
-		HAL_Delay(100);
-
-		printf(d3.CC120x_Status);
-		printf(d3.CC120x_Received);
-		printf(d4.CC120x_Status);
-		printf(d4.CC120x_Received);*/
-
-
-		cc120x_Init(hspi3, GPIOB, GPIO_PIN_8);
-		cc120x_WriteStrobe(SRES);
-		 HAL_Delay(100);
-//		 cc120x_WriteStrobe(SIDLE);
-//		 cc120x_WriteStrobe(SCAL);
-		 cc120x_WriteSettings(preferredSettingsRX);
-
-		 cc120x_WriteStrobe(SRX);
-
-
-		 cc120x_Init(hspi3, GPIOA, GPIO_PIN_4);
-		 cc120x_WriteStrobe(SRES);
-//		 cc120x_WriteStrobe(SIDLE);
-//		 cc120x_WriteStrobe(SCAL);
-
-		 HAL_Delay(100);
-
-
-		 cc120x_WriteSettings(preferredSettingsTX);
-		 registerSetting_t *rs = cc120x_ReadSettings();
-
-		 HAL_Delay(100);
-
-
-		 uint8_t txBuffer[] = { 'H', 'E', 'L', 'L', 'O' };
-		 cc120x_TransmitData(txBuffer);
-
-		 HAL_Delay(100);
-
-
-		 cc120x_Init(hspi3, GPIOB, GPIO_PIN_8);
-		 cc120x_WriteStrobe(SIDLE);
-		 HAL_Delay(100);
-		 cc120x_DataTypedef rx = cc120x_ReceiveData();
-		 d1 = cc120x_ReadSingleReg(FIFO_NUM_RXBYTES);
-
-		 d2 = cc120x_RegAccess(CC120x_Read, CC120x_burstAccess, StdFIFO, NULL, 5);
-		 HAL_Delay(100);
-
 	}
 	/* USER CODE END WHILE */
 
 	/* USER CODE BEGIN 3 */
 	/* USER CODE END 3 */
 }
-
 /**
  * @brief System Clock Configuration
  * @retval None

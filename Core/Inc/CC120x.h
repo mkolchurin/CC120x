@@ -1,19 +1,17 @@
 #ifndef CC120X_H
 #define CC120X_H
 
-#define timeout 0xFFFF
+
 #define StdFIFO 0x3F
 
 #include "types.h"
 
- struct registerSetting_t
+struct registerSetting_t
 {
 	uint16_t addr;
 	uint8_t data;
 };
 typedef struct registerSetting_t registerSetting_t;
-
-
 typedef enum
 {
 	CC120x_burstAccess = 0x40, /*0b01000000*/
@@ -29,7 +27,7 @@ typedef enum
 struct cc120x_DataTypedef
 {
 	uint8_t CC120x_Status;
-	uint8_t *CC120x_Received;
+	uint16_t *CC120x_Received;
 };
 
 typedef struct cc120x_DataTypedef cc120x_DataTypedef;
@@ -286,7 +284,7 @@ cc120x_DataTypedef cc120x_RegAccess(RWBit rwBit, Burst burst, uint16_t address,
 cc120x_DataTypedef cc120x_TransmitData(uint8_t *txBuffer);
 cc120x_DataTypedef cc120x_WriteStrobe(uint8_t command);
 cc120x_DataTypedef cc120x_WriteSingleReg(uint16_t address, uint8_t value);
-void CC120xWriteSettings(registerSetting_t *registerSettings);
+void cc120x_WriteSettings(registerSetting_t registerSettings);
 cc120x_DataTypedef cc120x_WriteBurstReg(uint16_t startAddress, uint8_t *value, uint16_t length);
 cc120x_DataTypedef cc120x_ReadSingleReg(uint16_t address);
 cc120x_DataTypedef cc120x_ReadBurstReg(uint16_t address, uint16_t length);
