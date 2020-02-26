@@ -101,7 +101,7 @@ cc120x_DataTypedef cc120x_8bitAccess(RWBit rw, Burst burst, uint8_t address,
 	return (CC120x_data);
 }
 
-cc120x_DataTypedef cc120x_16bitAccess(RWBit rw, uint8_t burst, uint8_t command,
+cc120x_DataTypedef cc120x_16bitAccess(RWBit rw, Burst burst, uint8_t command,
 		uint8_t address, uint8_t *txData, uint16_t length)
 {
 
@@ -142,7 +142,7 @@ cc120x_DataTypedef cc120x_RegAccess(RWBit rwBit, Burst burst, uint16_t address,
 
 }
 
-cc120x_DataTypedef cc120x_TransmitData(uint8_t *txBuffer)
+cc120x_DataTypedef cc120x_TransmitData(uint8_t txBuffer)
 {
 	uint8_t length = sizeof(txBuffer) / sizeof(txBuffer[0]);
 
@@ -193,6 +193,23 @@ void cc120x_WriteSettings(registerSetting_t registerSettings)
 
 }
 
+//void cc120x_WriteSettings1(const struct registerSetting_t registerSettings1[])
+//{
+//	const registerSetting_t * registerSettings = *&registerSettings1;
+//	uint8_t settingsSize = (sizeof(registerSettings)
+//			/ sizeof((registerSettings)[0]));
+//	for (uint8_t i = 0; i < settingsSize; i++)
+//	{
+//	uint8_t value[] =
+//	{ registerSettings[i].data };
+//
+//	uint8_t address = registerSettings[i].addr;
+//
+//	cc120x_RegAccess(CC120x_Write, CC120x_SingleAccess, address, value, 1);
+//	}
+//
+//}
+
 cc120x_DataTypedef cc120x_WriteBurstReg(uint16_t startAddress, uint8_t *value,
 		uint16_t length)
 {
@@ -215,7 +232,7 @@ cc120x_DataTypedef cc120x_ReadBurstReg(uint16_t address, uint16_t length)
 registerSetting_t* cc120x_ReadSettings(void)
 {
 
-	cc120x_DataTypedef data = cc120x_ReadBurstReg(0x00, 0xFF);
+	cc120x_DataTypedef data = cc120x_ReadBurstReg(0x00, 0x2FFF);
 	registerSetting_t *rSettings = malloc(0xFFFF); //XXX check malloc use
 
 	uint16_t l = sizeof(data.CC120x_Received)/sizeof(data.CC120x_Received[0]);

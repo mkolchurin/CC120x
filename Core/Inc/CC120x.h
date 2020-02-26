@@ -12,6 +12,8 @@ struct registerSetting_t
 	uint8_t data;
 };
 typedef struct registerSetting_t registerSetting_t;
+
+
 typedef enum
 {
 	CC120x_burstAccess = 0x40, /*0b01000000*/
@@ -281,7 +283,7 @@ cc120x_DataTypedef cc120x_16bitAccess(RWBit rw, uint8_t burst, uint8_t command,
 		uint8_t address, uint8_t *txData, uint16_t length);
 cc120x_DataTypedef cc120x_RegAccess(RWBit rwBit, Burst burst, uint16_t address,
 		uint8_t *txData, uint16_t length);
-cc120x_DataTypedef cc120x_TransmitData(uint8_t *txBuffer);
+cc120x_DataTypedef cc120x_TransmitData(uint8_t txBuffer);
 cc120x_DataTypedef cc120x_WriteStrobe(uint8_t command);
 cc120x_DataTypedef cc120x_WriteSingleReg(uint16_t address, uint8_t value);
 void cc120x_WriteSettings(registerSetting_t registerSettings);

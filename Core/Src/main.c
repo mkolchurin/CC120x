@@ -108,6 +108,10 @@ int main(void)
 				/ sizeof((preferredSettingsRX)[0]));
 		for (uint8_t i = 0; i < settingsSize; i++)
 			cc120x_WriteSettings(preferredSettingsRX[i]);
+
+
+		cc120x_DataTypedef data = cc120x_ReadBurstReg(0x00, 0xFF);
+
 		registerSetting_t *settings = cc120x_ReadSettings();
 
 		HAL_Delay(100);
