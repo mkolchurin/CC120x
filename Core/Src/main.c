@@ -10,7 +10,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "CC120x.h"
-#include <CC120x_register_settings.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -62,7 +61,6 @@ void SystemClock_Config(void);
 //
 //	HAL_Delay(100);
 //}
-
 /* USER CODE END 0 */
 
 /**
@@ -98,28 +96,96 @@ int main(void)
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
+	cc120x_Init(hspi3, GPIOA, GPIO_PIN_4);
+	cc120x_WriteStrobe(SRES);
+	HAL_Delay(100);
 
+	cc120x_WriteSettings();
 	while (1)
 	{
-		cc120x_Init(hspi3, GPIOA, GPIO_PIN_4);
-		cc120x_WriteStrobe(SRES);
-		HAL_Delay(100);
+////////RX
 
-		uint8_t rx;
-		uint8_t tx[1] = {0x06};
-		cc120x_RegAccess(CC120x_Write, CC120x_SingleAccess, IOCFG2, &tx, 0, 1);
-		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, IOCFG2, 0, &rx, 1);
-//		uint8_t settingsSize = (sizeof(preferredSettingsRX)
-//				/ sizeof((preferredSettingsRX)[0]));
-//		for (uint8_t i = 0; i < settingsSize; i++)
-//			cc120x_WriteSettings(preferredSettingsRX[i]);
+		uint8_t addr = 0b11111111;
+		uint8_t rx[10] =
+		{ 0 };
+		rx[5] = 0x1F;
+//		while (rx[5] == 0x1F)
+//			cc120x_RegAccess(CC120x_Write, CC120x_SingleAccess, SNOP, 0, &rx[5], 1);
+		while (rx[0] == 0x00)
+		{
+			cc120x_WriteStrobe(SRX);
+			HAL_Delay(300);
+
+			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, NUM_RXBYTES, 0,
+					&rx[0], 1);
+			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, FIFO_NUM_RXBYTES,
+					0, &rx[1], 1);
+			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, RXFIFO_PRE_BUF,
+					0, &rx[2], 1);
+			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, SERIAL_STATUS, 0,
+					&rx[3], 1);
+			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, FIFO_CFG, 0,
+					&rx[4], 1);
+			cc120x_RegAccess(CC120x_Write, CC120x_SingleAccess, SNOP, 0, &rx[5],
+					1);
+			HAL_Delay(100);
+			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, addr, 0, &rx, 10);
+//			cc120x_WriteStrobe(SRX);
+//			HAL_Delay(100);
+		}
+		cc120x_WriteStrobe(SNOP);
+//		cc120x_WriteStrobe(SIDLE);
+
+		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, addr, 0, &rx, 10);
+		cc120x_WriteStrobe(SNOP);
+		cc120x_WriteStrobe(SFRX);
+
+		if (rx[3] != 0x00)
+		{
+			HAL_Delay(100);
+		}
+
+///////////TX
 //
 //
-//		cc120x_DataTypedef data = cc120x_ReadBurstReg(0x00, 0xFF);
-
-//		registerSetting_t *settings = cc120x_ReadSettings();
-
-		HAL_Delay(100);
+//
+//		uint8_t size = 64;
+//		HAL_Delay(100);
+//		uint8_t addr = 0b01111111;
+//		uint8_t tx[size];
+//		for (uint8_t j = 0; j < size; j++)
+//		{
+//			for (uint8_t i = 0; i < size; i++)
+//			{
+//				tx[i] = i;
+//			}
+//			tx[0] = 0xAA;
+//			tx[1] = 0xAA;
+//			tx[2] = 0xAA;
+//			tx[3] = 0xD9;
+//			tx[4] = 0xCC;
+//
+//			cc120x_RegAccess(CC120x_Write, CC120x_burstAccess, addr, tx, 0,
+//					size);
+//
+////			uint8_t rx[10] =
+////			{ 0 };
+////			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, FIFO_NUM_TXBYTES,
+////					0, &rx[0], 1);
+//
+//			cc120x_WriteStrobe(STX);
+//			HAL_Delay(200);
+//			cc120x_WriteStrobe(SFTX);
+//		}
+//
+//		/*		while (rx[0] != 0x01)
+//		 {
+//		 cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, FIFO_NUM_TXBYTES,
+//		 0, &rx[0], 1);
+//		 HAL_Delay(100);
+//		 }*/
+//
+//		HAL_Delay(100);
 	}
 	/* USER CODE END WHILE */
 
