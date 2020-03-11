@@ -38,30 +38,30 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void dataAccessTest(void)
-{
-	cc120x_Init(hspi3, GPIOA, GPIO_PIN_4);
-	cc120x_WriteStrobe(SRES);
-	HAL_Delay(100);
-
-	uint16_t address = FS_DIG0;
-	uint8_t txData[] =
-	{ 0xA0 };
-	uint8_t length = 1;
-
-	cs_low();
-	cc120x_DataTypedef dataTX = cc120x_RegAccess(CC120x_Write,
-			CC120x_SingleAccess, address, txData, length);
-
-	cs_high();
-
-	cs_low();
-	cc120x_DataTypedef dataRX = cc120x_RegAccess(CC120x_Read,
-			CC120x_SingleAccess, address, 0, length);
-	cs_high();
-
-	HAL_Delay(100);
-}
+//void dataAccessTest(void)
+//{
+//	cc120x_Init(hspi3, GPIOA, GPIO_PIN_4);
+//	cc120x_WriteStrobe(SRES);
+//	HAL_Delay(100);
+//
+//	uint16_t address = FS_DIG0;
+//	uint8_t txData[] =
+//	{ 0xA0 };
+//	uint8_t length = 1;
+//
+//	cs_low();
+//	cc120x_DataTypedef dataTX = cc120x_RegAccess(CC120x_Write,
+//			CC120x_SingleAccess, address, txData, length);
+//
+//	cs_high();
+//
+//	cs_low();
+//	cc120x_DataTypedef dataRX = cc120x_RegAccess(CC120x_Read,
+//			CC120x_SingleAccess, address, 0, length);
+//	cs_high();
+//
+//	HAL_Delay(100);
+//}
 
 /* USER CODE END 0 */
 
@@ -104,15 +104,20 @@ int main(void)
 		cc120x_Init(hspi3, GPIOA, GPIO_PIN_4);
 		cc120x_WriteStrobe(SRES);
 		HAL_Delay(100);
-		uint8_t settingsSize = (sizeof(preferredSettingsRX)
-				/ sizeof((preferredSettingsRX)[0]));
-		for (uint8_t i = 0; i < settingsSize; i++)
-			cc120x_WriteSettings(preferredSettingsRX[i]);
 
+		uint8_t rx;
+		uint8_t tx[1] = {0x06};
+		cc120x_RegAccess(CC120x_Write, CC120x_SingleAccess, IOCFG2, &tx, 0, 1);
+		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, IOCFG2, 0, &rx, 1);
+//		uint8_t settingsSize = (sizeof(preferredSettingsRX)
+//				/ sizeof((preferredSettingsRX)[0]));
+//		for (uint8_t i = 0; i < settingsSize; i++)
+//			cc120x_WriteSettings(preferredSettingsRX[i]);
+//
+//
+//		cc120x_DataTypedef data = cc120x_ReadBurstReg(0x00, 0xFF);
 
-		cc120x_DataTypedef data = cc120x_ReadBurstReg(0x00, 0xFF);
-
-		registerSetting_t *settings = cc120x_ReadSettings();
+//		registerSetting_t *settings = cc120x_ReadSettings();
 
 		HAL_Delay(100);
 	}

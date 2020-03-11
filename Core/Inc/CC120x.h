@@ -26,13 +26,15 @@ typedef enum
 	CC120x_Write = 0x00
 } RWBit;
 
-struct cc120x_DataTypedef
-{
-	uint8_t CC120x_Status;
-	uint16_t *CC120x_Received;
-};
+//struct cc120x_DataTypedef
+//{
+//	uint8_t CC120x_Status;
+//	uint16_t *CC120x_Received;
+//};
 
-typedef struct cc120x_DataTypedef cc120x_DataTypedef;
+
+
+//typedef struct cc120x_DataTypedef cc120x_DataTypedef;
 
 //STATE BYTE (SO_Byte & 0x10000000)
 #define STATE_CHIP_RDYn		0x00 // 0xxxxxxx
@@ -277,20 +279,20 @@ void cs_low(void);
 void cs_high(void);
 void cc120x_Init(SPI_HandleTypeDef hspi, GPIO_TypeDef *GPIOPort,
 		uint16_t GPIOPin);
-cc120x_DataTypedef cc120x_8bitAccess(RWBit rw, Burst burst, uint8_t address,
-		uint8_t *txData, uint16_t length);
-cc120x_DataTypedef cc120x_16bitAccess(RWBit rw, uint8_t burst, uint8_t command,
-		uint8_t address, uint8_t *txData, uint16_t length);
-cc120x_DataTypedef cc120x_RegAccess(RWBit rwBit, Burst burst, uint16_t address,
-		uint8_t *txData, uint16_t length);
-cc120x_DataTypedef cc120x_TransmitData(uint8_t txBuffer);
-cc120x_DataTypedef cc120x_WriteStrobe(uint8_t command);
-cc120x_DataTypedef cc120x_WriteSingleReg(uint16_t address, uint8_t value);
-void cc120x_WriteSettings(registerSetting_t registerSettings);
-cc120x_DataTypedef cc120x_WriteBurstReg(uint16_t startAddress, uint8_t *value, uint16_t length);
-cc120x_DataTypedef cc120x_ReadSingleReg(uint16_t address);
-cc120x_DataTypedef cc120x_ReadBurstReg(uint16_t address, uint16_t length);
-registerSetting_t* cc120x_ReadSettings(void);
-cc120x_DataTypedef cc120x_ReceiveData(void);
+//uint8_t cc120x_8bitAccess(RWBit rw, Burst burst, uint8_t address,
+//		uint8_t *txData, uint8_t *rxData, uint16_t length);
+//uint8_t cc120x_16bitAccess(RWBit rw, uint8_t burst, uint8_t command,
+//		uint8_t address, uint8_t *txData,uint8_t *rxData, uint16_t length);
+//uint8_t cc120x_RegAccess(RWBit rwBit, Burst burst, uint16_t address,
+//		uint8_t *txData, uint16_t length);
+//uint8_t * cc120x_TransmitData(uint8_t *txBuffer);
+//uint8_t * cc120x_WriteStrobe(uint8_t command);
+//uint8_t * cc120x_WriteSingleReg(uint16_t address, uint8_t value);
+//void cc120x_WriteSettings(registerSetting_t registerSettings);
+//uint8_t * cc120x_WriteBurstReg(uint16_t startAddress, uint8_t *value, uint16_t length);
+//uint8_t * cc120x_ReadSingleReg(uint16_t address);
+//uint8_t * cc120x_ReadBurstReg(uint16_t address, uint16_t length);
+//registerSetting_t* cc120x_ReadSettings(void);
+//uint8_t * cc120x_ReceiveData(void);
 
 #endif
