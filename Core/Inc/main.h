@@ -60,8 +60,10 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define CS_PIN_Pin GPIO_PIN_4
 #define CS_PIN_GPIO_Port GPIOA
-#define GPIO0_Pin GPIO_PIN_5
-#define GPIO0_GPIO_Port GPIOB
+#define G2_Pin GPIO_PIN_15
+#define G2_GPIO_Port GPIOE
+#define G0_Pin GPIO_PIN_5
+#define G0_GPIO_Port GPIOB
 #define CS1_PIN_Pin GPIO_PIN_8
 #define CS1_PIN_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */

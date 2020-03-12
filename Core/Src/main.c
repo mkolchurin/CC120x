@@ -37,30 +37,201 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-//void dataAccessTest(void)
-//{
-//	cc120x_Init(hspi3, GPIOA, GPIO_PIN_4);
-//	cc120x_WriteStrobe(SRES);
-//	HAL_Delay(100);
-//
-//	uint16_t address = FS_DIG0;
-//	uint8_t txData[] =
-//	{ 0xA0 };
-//	uint8_t length = 1;
-//
-//	cs_low();
-//	cc120x_DataTypedef dataTX = cc120x_RegAccess(CC120x_Write,
-//			CC120x_SingleAccess, address, txData, length);
-//
-//	cs_high();
-//
-//	cs_low();
-//	cc120x_DataTypedef dataRX = cc120x_RegAccess(CC120x_Read,
-//			CC120x_SingleAccess, address, 0, length);
-//	cs_high();
-//
-//	HAL_Delay(100);
-//}
+void RX()
+{
+
+	uint8_t rx[10] =
+	{ 0 };
+	uint8_t addr = 0b11111111;
+
+	uint8_t state = 0xFF;
+
+	//wait rx mode
+	while ((state & 0b01110000) != 0b00010000)
+	{
+		cc120x_WriteStrobe(SFRX);
+		cc120x_WriteStrobe(SRX);
+
+		HAL_Delay(100);
+
+		state = cc120x_WriteStrobe(SNOP);
+	}
+	GPIO_PinState s = HAL_GPIO_ReadPin(G0_GPIO_Port, G0_Pin);
+	GPIO_PinState s1 = HAL_GPIO_ReadPin(G2_GPIO_Port, G2_Pin);
+	while (s1 != GPIO_PIN_SET || rx[0] != 0 || rx[1] != 0)
+	{
+		s1 = HAL_GPIO_ReadPin(G2_GPIO_Port, G2_Pin);
+		state = cc120x_WriteStrobe(SNOP);
+
+		if ((state & 0b01110000) != 0b00010000)
+			HAL_Delay(100);
+		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, RXFIRST, 0, &rx[0],
+				1);
+		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, RXLAST, 0, &rx[1],
+				1);
+
+		cc120x_WriteStrobe(SNOP);
+
+	}
+
+	cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, RXFIFO_PRE_BUF, 0,
+			&rx[2], 1);
+	cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, SERIAL_STATUS, 0, &rx[3],
+			1);
+
+	cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, addr, 0, &rx, 10);
+
+	cc120x_WriteStrobe(SNOP);
+//		cc120x_WriteStrobe(SIDLE);
+
+	cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, addr, 0, &rx, 10);
+	cc120x_WriteStrobe(SNOP);
+	cc120x_WriteStrobe(SFRX);
+
+	if (rx[3] != 0x00)
+	{
+		HAL_Delay(100);
+	}
+}
+void TX(){
+
+		cc120x_WriteStrobe(SFTX);
+		cc120x_WriteStrobe(SIDLE);
+		uint8_t size = 0x128;
+
+		uint8_t addr = 0b01111111;
+		uint8_t tx[size];
+		for (uint8_t i = 0; i < size; i++)
+		{
+			if(i == 0x0) {
+				tx[i] = size;
+				i++;
+				continue;
+			}
+			tx[i] = i;
+		}
+		cc120x_RegAccess(CC120x_Write, CC120x_burstAccess,
+				 addr, tx, 0, size);
+
+
+		uint8_t state = 0xFF;
+
+		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, TXFIRST, 0,
+						&state, 1);
+		cc120x_WriteStrobe(STX);
+		HAL_Delay(200);
+		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, TXFIRST, 0,
+						&state, 1);
+		state = cc120x_WriteStrobe(SNOP);
+				HAL_Delay(200);
+
+		state = cc120x_WriteStrobe(SNOP);
+		HAL_Delay(1000);
+		/*
+
+		 for (uint8_t j = 0; j < size; j++)
+		 {
+
+		 tx[0] = 0xAA;
+		 tx[1] = 0xAA;
+		 tx[2] = 0xAA;
+		 tx[3] = 0xD9;
+		 tx[4] = 0xCC;
+
+		 cc120x_RegAccess(CC120x_Write, CC120x_burstAccess, addr, tx, 0,
+		 size);
+
+		 //			uint8_t rx[10] =
+		 //			{ 0 };
+		 //			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, FIFO_NUM_TXBYTES,
+		 //					0, &rx[0], 1);
+
+		 cc120x_WriteStrobe(STX);
+		 HAL_Delay(200);
+		 cc120x_WriteStrobe(SFTX);
+		 }
+
+		 while (rx[0] != 0x01)
+		 {
+		 cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, FIFO_NUM_TXBYTES,
+		 0, &rx[0], 1);
+		 HAL_Delay(100);
+		 }
+
+		 HAL_Delay(100);*/
+}
+
+
+
+#define uint8 uint8_t
+#define uint32 uint32_t
+#define ISR_ACTION_REQUIRED 1
+#define ISR_IDLE            0
+
+#define PKTLEN      32 //
+#define LABLE 'Z'
+#define SOURCE      0x01
+#define INDEX '*'  // OK ? request answer
+#define DEV_ADDR     0xB0
+uint8 packetSemaphore = ISR_IDLE;
+
+
+uint32 packetCounter  = 0;
+uint8 interruptCount = 0;
+static void runTX()
+{
+
+   static uint8_t marcState;
+   uint8_t temp = 2;
+
+// Initialize packet buffer of size PKTLEN + 1
+   uint8_t txBuffer[PKTLEN]={
+0
+};
+   temp = interruptCount;
+
+    //Calibrate frequency synthesizer
+   cc120xSpiCmdStrobe(SCAL);
+   do{
+//   after Calibrate frequency synthesizer goto Idle
+      cc120xSpiReadReg(MARCSTATE,&marcState,1);  //  read the Marcstate(0x2F73) reg of value
+
+}while(marcState != 0x41); // 0100 0001  bit6:5 10 Idle bit4:0 0001 Idle
+
+   cc120xSpiCmdStrobe(SFSTXON);
+
+   //Loop
+   while(1)
+   {
+
+  // Create a packet with + 2 bytes  + 26 Abc bytes
+  createPacket(txBuffer);
+  cc120xSpiReadReg(NUM_TXBYTES,&temp,1);
+   // Write packet to TX FIFO
+  cc120xSpiWriteTxFifo(txBuffer,sizeof(txBuffer));
+  cc120xSpiReadReg(NUM_TXBYTES,&temp,1);
+
+  // Strobe TX to send packet
+ //temp = GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_2);
+  cc120xSpiCmdStrobe(STX);
+//  cc120xSpiReadReg(CC1200_MARCSTATE,&marcState,1);
+
+  // Wait for interrupt that packet has been sent.
+      // (Assumes the GPIO connected to the radioRxTxISR function is set
+      // to GPIOx_CFG = 0x06)
+  while( packetSemaphore != ISR_ACTION_REQUIRED)
+  ;
+  cc120xSpiCmdStrobe(SIDLE);//  Send over  and goto SIDLE State
+  cc120xSpiCmdStrobe(SFTX); //Flush the Tx FIFO  if not will full
+  // Clear semaphore flag
+      packetSemaphore = ISR_IDLE;
+  temp = interruptCount;
+  delay(200);
+//  printf("%d\n", interruptCount);
+
+
+} //end of while(true)
+
 /* USER CODE END 0 */
 
 /**
@@ -103,95 +274,17 @@ int main(void)
 	cc120x_WriteSettings();
 	while (1)
 	{
-////////RX
+//RX();
+//TX();
+runTX();
 
-		uint8_t addr = 0b11111111;
-		uint8_t rx[10] =
-		{ 0 };
-		rx[5] = 0x1F;
-//		while (rx[5] == 0x1F)
-//			cc120x_RegAccess(CC120x_Write, CC120x_SingleAccess, SNOP, 0, &rx[5], 1);
-		while (rx[0] == 0x00)
-		{
-			cc120x_WriteStrobe(SRX);
-			HAL_Delay(300);
-
-			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, NUM_RXBYTES, 0,
-					&rx[0], 1);
-			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, FIFO_NUM_RXBYTES,
-					0, &rx[1], 1);
-			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, RXFIFO_PRE_BUF,
-					0, &rx[2], 1);
-			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, SERIAL_STATUS, 0,
-					&rx[3], 1);
-			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, FIFO_CFG, 0,
-					&rx[4], 1);
-			cc120x_RegAccess(CC120x_Write, CC120x_SingleAccess, SNOP, 0, &rx[5],
-					1);
-			HAL_Delay(100);
-			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, addr, 0, &rx, 10);
-//			cc120x_WriteStrobe(SRX);
-//			HAL_Delay(100);
-		}
-		cc120x_WriteStrobe(SNOP);
-//		cc120x_WriteStrobe(SIDLE);
-
-		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, addr, 0, &rx, 10);
-		cc120x_WriteStrobe(SNOP);
-		cc120x_WriteStrobe(SFRX);
-
-		if (rx[3] != 0x00)
-		{
-			HAL_Delay(100);
-		}
-
-///////////TX
-//
-//
-//
-//		uint8_t size = 64;
-//		HAL_Delay(100);
-//		uint8_t addr = 0b01111111;
-//		uint8_t tx[size];
-//		for (uint8_t j = 0; j < size; j++)
-//		{
-//			for (uint8_t i = 0; i < size; i++)
-//			{
-//				tx[i] = i;
-//			}
-//			tx[0] = 0xAA;
-//			tx[1] = 0xAA;
-//			tx[2] = 0xAA;
-//			tx[3] = 0xD9;
-//			tx[4] = 0xCC;
-//
-//			cc120x_RegAccess(CC120x_Write, CC120x_burstAccess, addr, tx, 0,
-//					size);
-//
-////			uint8_t rx[10] =
-////			{ 0 };
-////			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, FIFO_NUM_TXBYTES,
-////					0, &rx[0], 1);
-//
-//			cc120x_WriteStrobe(STX);
-//			HAL_Delay(200);
-//			cc120x_WriteStrobe(SFTX);
-//		}
-//
-//		/*		while (rx[0] != 0x01)
-//		 {
-//		 cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, FIFO_NUM_TXBYTES,
-//		 0, &rx[0], 1);
-//		 HAL_Delay(100);
-//		 }*/
-//
-//		HAL_Delay(100);
 	}
 	/* USER CODE END WHILE */
 
 	/* USER CODE BEGIN 3 */
 	/* USER CODE END 3 */
 }
+
 /**
  * @brief System Clock Configuration
  * @retval None
