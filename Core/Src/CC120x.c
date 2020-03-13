@@ -140,6 +140,14 @@ uint8_t cc120x_RegAccess(RWBit rwBit, Burst burst, uint16_t address,
 
 }
 
+void cc120xSpiReadReg(uint16_t address, uint8_t *rx, uint16_t size)
+{
+	cc120x_RegAccess(CC120x_Read, CC120x_burstAccess, address, 0, rx, size);
+}
+void cc120xSpiWriteReg(uint16_t address, uint8_t *tx, uint16_t size)
+{
+	cc120x_RegAccess(CC120x_Write, CC120x_burstAccess, address, tx, 0, size);
+}
 /*
  uint8_t * cc120x_TransmitData(uint8_t *txBuffer)
  {
@@ -166,7 +174,7 @@ uint8_t cc120x_RegAccess(RWBit rwBit, Burst burst, uint16_t address,
 uint8_t cc120x_WriteStrobe(uint8_t command)
 {
 	return (cc120x_RegAccess(CC120x_Write, CC120x_SingleAccess, command, NULL,
-			NULL, 1));
+	NULL, 1));
 }
 /*
  uint8_t * cc120x_WriteSingleReg(uint16_t address, uint8_t value)
@@ -187,8 +195,9 @@ void cc120x_WriteSettings(/*registerSetting_t *registerSettings*/)
 	{
 		uint8_t value[] =
 		{ preferredSettings[i].data };
-		uint8_t address = preferredSettings[i].addr;
-		cc120x_RegAccess(CC120x_Write, CC120x_SingleAccess, address, value, 0, 1);
+		uint16_t address = preferredSettings[i].addr;
+		cc120x_RegAccess(CC120x_Write, CC120x_SingleAccess, address, value, 0,
+				1);
 	}
 
 }
@@ -211,42 +220,40 @@ void cc120x_WriteSettings(/*registerSetting_t *registerSettings*/)
 //}
 
 /*
-uint8_t* cc120x_WriteBurstReg(uint16_t startAddress, uint8_t *value,
-		uint16_t length)
-{
-//uint8_t length = sizeof(value) / sizeof(value[0]);
-	return (cc120x_RegAccess(CC120x_Write, CC120x_burstAccess, startAddress,
-			value, length));
-}
+ uint8_t* cc120x_WriteBurstReg(uint16_t startAddress, uint8_t *value,
+ uint16_t length)
+ {
+ //uint8_t length = sizeof(value) / sizeof(value[0]);
+ return (cc120x_RegAccess(CC120x_Write, CC120x_burstAccess, startAddress,
+ value, length));
+ }
 
-uint8_t* cc120x_ReadSingleReg(uint16_t address)
-{
-	return (cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, address, NULL, 1));
-}
+ uint8_t* cc120x_ReadSingleReg(uint16_t address)
+ {
+ return (cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, address, NULL, 1));
+ }
 
-uint8_t* cc120x_ReadBurstReg(uint16_t address, uint16_t length)
-{
-	return (cc120x_RegAccess(CC120x_Read, CC120x_burstAccess, address, NULL,
-			length));
-}
+ uint8_t* cc120x_ReadBurstReg(uint16_t address, uint16_t length)
+ {
+ return (cc120x_RegAccess(CC120x_Read, CC120x_burstAccess, address, NULL,
+ length));
+ }
 
-registerSetting_t* cc120x_ReadSettings(void)
-{
+ registerSetting_t* cc120x_ReadSettings(void)
+ {
 
-	cc120x_DataTypedef data = cc120x_ReadBurstReg(0x00, 0x2FFF);
-	registerSetting_t *rSettings = malloc(0xFFFF); //XXX check malloc use
+ cc120x_DataTypedef data = cc120x_ReadBurstReg(0x00, 0x2FFF);
+ registerSetting_t *rSettings = malloc(0xFFFF); //XXX check malloc use
 
-	uint16_t l = sizeof(data.CC120x_Received) / sizeof(data.CC120x_Received[0]);
-	for (uint16_t i = 0x00; i < l; i += 0x0001)
-	{
-		rSettings[i].addr = i;
-		rSettings[i].data = data.CC120x_Received[i];
-	}
+ uint16_t l = sizeof(data.CC120x_Received) / sizeof(data.CC120x_Received[0]);
+ for (uint16_t i = 0x00; i < l; i += 0x0001)
+ {
+ rSettings[i].addr = i;
+ rSettings[i].data = data.CC120x_Received[i];
+ }
 
-	return (rSettings);
+ return (rSettings);
 
-}
-*/
-
-
+ }
+ */
 

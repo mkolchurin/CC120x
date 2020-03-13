@@ -73,5 +73,8 @@ uint8_t cc120x_RegAccess(RWBit rwBit, Burst burst, uint16_t address,
 		uint8_t *txData, uint8_t *rxData, uint16_t length);
 uint8_t cc120x_WriteStrobe(uint8_t command);
 void cc120x_WriteSettings(/*registerSetting_t *registerSettings*/);
+void cc120xSpiWriteReg(uint16_t address, uint8_t *tx, uint16_t size);
+void cc120xSpiReadReg(uint16_t address, uint8_t *rx, uint16_t size);
+
 
 #endif

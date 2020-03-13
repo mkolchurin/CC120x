@@ -37,236 +37,224 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void RX()
+void createPacket(uint8_t txBuffer[]);
+#define ISR_ACTION_REQUIRED 1
+#define ISR_IDLE            0
+#define RX_FIFO_ERROR       0x11
+uint8_t packetSemaphore;
+uint32_t packetCounter = 0;
+
+void runRX(void)
 {
 
-	uint8_t rx[10] =
+	uint8_t rxBuffer[128] =
 	{ 0 };
-	uint8_t addr = 0b11111111;
+	uint8_t rxBytes;
+	uint8_t marcState;
 
-	uint8_t state = 0xFF;
+//    // Connect ISR function to GPIO2
+//    ioPinIntRegister(IO_PIN_PORT_1, GPIO2, &radioRxISR);
+//
+//    // Interrupt on falling edge
+//    ioPinIntTypeSet(IO_PIN_PORT_1, GPIO2, IO_PIN_FALLING_EDGE);
+//
+//    // Clear ISR flag
+//    ioPinIntClear(IO_PIN_PORT_1, GPIO2);
+//
+//    // Enable interrupt
+//    ioPinIntEnable(IO_PIN_PORT_1, GPIO2);
 
-	//wait rx mode
-	while ((state & 0b01110000) != 0b00010000)
-	{
-		cc120x_WriteStrobe(SFRX);
-		cc120x_WriteStrobe(SRX);
-
-		HAL_Delay(100);
-
-		state = cc120x_WriteStrobe(SNOP);
-	}
-	GPIO_PinState s = HAL_GPIO_ReadPin(G0_GPIO_Port, G0_Pin);
-	GPIO_PinState s1 = HAL_GPIO_ReadPin(G2_GPIO_Port, G2_Pin);
-	while (s1 != GPIO_PIN_SET || rx[0] != 0 || rx[1] != 0)
-	{
-		s1 = HAL_GPIO_ReadPin(G2_GPIO_Port, G2_Pin);
-		state = cc120x_WriteStrobe(SNOP);
-
-		if ((state & 0b01110000) != 0b00010000)
-			HAL_Delay(100);
-		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, RXFIRST, 0, &rx[0],
-				1);
-		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, RXLAST, 0, &rx[1],
-				1);
-
-		cc120x_WriteStrobe(SNOP);
-
-	}
-
-	cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, RXFIFO_PRE_BUF, 0,
-			&rx[2], 1);
-	cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, SERIAL_STATUS, 0, &rx[3],
-			1);
-
-	cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, addr, 0, &rx, 10);
-
-	cc120x_WriteStrobe(SNOP);
-//		cc120x_WriteStrobe(SIDLE);
-
-	cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, addr, 0, &rx, 10);
-	cc120x_WriteStrobe(SNOP);
+// Set radio in RX
 	cc120x_WriteStrobe(SFRX);
+	HAL_Delay(10);
+	cc120x_WriteStrobe(SRX);
 
-	if (rx[3] != 0x00)
+	// Infinite loop
+	while (1)
 	{
-		HAL_Delay(100);
+		GPIO_PinState s0 = HAL_GPIO_ReadPin(G0_GPIO_Port, G0_Pin);
+		GPIO_PinState s2 = HAL_GPIO_ReadPin(G2_GPIO_Port, G2_Pin);
+		GPIO_PinState s3 = HAL_GPIO_ReadPin(G3_GPIO_Port, G3_Pin);
+
+
+		if (s0 == GPIO_PIN_SET || s2 == GPIO_PIN_SET|| s3 == GPIO_PIN_SET)
+			packetSemaphore = 1;
+
+
+		//cc120xSpiReadReg(NUM_RXBYTES, &rxBytes, 1);
+
+
+		//if(rxBytes != 0x00)
+		//	packetSemaphore = 1;
+
+		// Mask out MARCSTATE bits and check if we have a RX FIFO error
+		if (cc120x_WriteStrobe(SNOP) == 0x6F)
+		{
+			cc120x_WriteStrobe(SFRX);
+			cc120x_WriteStrobe(SRX);
+
+		}
+		// Wait for packet received interrupt
+		if (packetSemaphore == ISR_ACTION_REQUIRED)
+		{
+
+			while(s0 == GPIO_PIN_SET || s2 == GPIO_PIN_SET|| s3 == GPIO_PIN_SET)
+				{ s0 = HAL_GPIO_ReadPin(G0_GPIO_Port, G0_Pin);
+				 s2 = HAL_GPIO_ReadPin(G2_GPIO_Port, G2_Pin);
+				 s3 = HAL_GPIO_ReadPin(G3_GPIO_Port, G3_Pin);}
+			// Read number of bytes in RX FIFO
+			cc120xSpiReadReg(NUM_RXBYTES, &rxBytes, 1);
+
+
+
+			// Check that we have bytes in FIFO
+			if (rxBytes != 0)
+			{
+
+				// Read MARCSTATE to check for RX FIFO error
+				cc120xSpiReadReg(MARCSTATE, &marcState, 1);
+
+				// Mask out MARCSTATE bits and check if we have a RX FIFO error
+				if ((marcState & 0x1F) == RX_FIFO_ERROR)
+				{
+
+					// Flush RX FIFO
+					cc120x_WriteStrobe(SFRX);
+				}
+				else
+				{
+
+					// Read n bytes from RX FIFO
+					cc120xSpiReadReg(0x3E, &rxBuffer, rxBytes);
+					cc120x_WriteStrobe(SFRX);
+//					cc120xSpiReadReg(RSSI0, &marcState, 1);
+//					cc120xSpiReadReg(RSSI1, &rxBytes, 1);
+					// Check CRC ok (CRC_OK: bit7 in second status byte)
+					// This assumes status bytes are appended in RX_FIFO
+					// (PKT_CFG1.APPEND_STATUS = 1)
+					// If CRC is disabled the CRC_OK field will read 1
+					if (rxBuffer[rxBytes - 1] & 0x80)
+					{
+
+						// Update packet counter
+						packetCounter++;
+
+					}
+				}
+			}
+
+			// Reset packet semaphore
+			packetSemaphore = ISR_IDLE;
+
+			// Set radio back in RX
+			cc120x_WriteStrobe(SRX);
+		}
 	}
 }
-void TX(){
 
-		cc120x_WriteStrobe(SFTX);
-		cc120x_WriteStrobe(SIDLE);
-		uint8_t size = 0x128;
-
-		uint8_t addr = 0b01111111;
-		uint8_t tx[size];
-		for (uint8_t i = 0; i < size; i++)
-		{
-			if(i == 0x0) {
-				tx[i] = size;
-				i++;
-				continue;
-			}
-			tx[i] = i;
-		}
-		cc120x_RegAccess(CC120x_Write, CC120x_burstAccess,
-				 addr, tx, 0, size);
-
-
-		uint8_t state = 0xFF;
-
-		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, TXFIRST, 0,
-						&state, 1);
-		cc120x_WriteStrobe(STX);
-		HAL_Delay(200);
-		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, TXFIRST, 0,
-						&state, 1);
-		state = cc120x_WriteStrobe(SNOP);
-				HAL_Delay(200);
-
-		state = cc120x_WriteStrobe(SNOP);
-		HAL_Delay(1000);
-		/*
-
-		 for (uint8_t j = 0; j < size; j++)
-		 {
-
-		 tx[0] = 0xAA;
-		 tx[1] = 0xAA;
-		 tx[2] = 0xAA;
-		 tx[3] = 0xD9;
-		 tx[4] = 0xCC;
-
-		 cc120x_RegAccess(CC120x_Write, CC120x_burstAccess, addr, tx, 0,
-		 size);
-
-		 //			uint8_t rx[10] =
-		 //			{ 0 };
-		 //			cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, FIFO_NUM_TXBYTES,
-		 //					0, &rx[0], 1);
-
-		 cc120x_WriteStrobe(STX);
-		 HAL_Delay(200);
-		 cc120x_WriteStrobe(SFTX);
-		 }
-
-		 while (rx[0] != 0x01)
-		 {
-		 cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, FIFO_NUM_TXBYTES,
-		 0, &rx[0], 1);
-		 HAL_Delay(100);
-		 }
-
-		 HAL_Delay(100);*/
-}
-
-
-
-#define uint8 uint8_t
-#define uint32 uint32_t
 #define ISR_ACTION_REQUIRED 1
 #define ISR_IDLE            0
 
-#define PKTLEN      32 //
-#define LABLE 'Z'
-#define SOURCE      0x01
-#define INDEX '*'  // OK ? request answer
-#define DEV_ADDR     0xB0
-uint8 packetSemaphore = ISR_IDLE;
-
-
-uint32 packetCounter  = 0;
-uint8 interruptCount = 0;
-static void runTX()
+#define PKTLEN              5 // 1 < PKTLEN < 126
+void runTX(void)
 {
 
-   static uint8_t marcState;
-   uint8_t temp = 2;
+	// Initialize packet buffer of size PKTLEN + 1
+	uint8_t txBuffer[PKTLEN + 1] =
+	{ 0 };
+	cc120x_WriteStrobe(SFTX);
+	while (1)
+	{
 
-// Initialize packet buffer of size PKTLEN + 1
-   uint8_t txBuffer[PKTLEN]={
-0
-};
-   temp = interruptCount;
+		// Update packet counter
+		packetCounter++;
 
-    //Calibrate frequency synthesizer
-   cc120xSpiCmdStrobe(SCAL);
-   do{
-//   after Calibrate frequency synthesizer goto Idle
-      cc120xSpiReadReg(MARCSTATE,&marcState,1);  //  read the Marcstate(0x2F73) reg of value
+		// Create a random packet with PKTLEN + 2 byte packet
+		// counter + n x random bytes
+		createPacket(txBuffer);
 
-}while(marcState != 0x41); // 0100 0001  bit6:5 10 Idle bit4:0 0001 Idle
+		// Write packet to TX FIFO
+		cc120xSpiWriteReg(0x3F, txBuffer, sizeof(txBuffer));
 
-   cc120xSpiCmdStrobe(SFSTXON);
+		// Strobe TX to send packet
+		cc120x_WriteStrobe(STX);
+		cc120x_WriteStrobe(SNOP);
 
-   //Loop
-   while(1)
-   {
-
-  // Create a packet with + 2 bytes  + 26 Abc bytes
-  createPacket(txBuffer);
-  cc120xSpiReadReg(NUM_TXBYTES,&temp,1);
-   // Write packet to TX FIFO
-  cc120xSpiWriteTxFifo(txBuffer,sizeof(txBuffer));
-  cc120xSpiReadReg(NUM_TXBYTES,&temp,1);
-
-  // Strobe TX to send packet
- //temp = GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_2);
-  cc120xSpiCmdStrobe(STX);
-//  cc120xSpiReadReg(CC1200_MARCSTATE,&marcState,1);
-
-  // Wait for interrupt that packet has been sent.
-      // (Assumes the GPIO connected to the radioRxTxISR function is set
-      // to GPIOx_CFG = 0x06)
-  while( packetSemaphore != ISR_ACTION_REQUIRED)
-  ;
-  cc120xSpiCmdStrobe(SIDLE);//  Send over  and goto SIDLE State
-  cc120xSpiCmdStrobe(SFTX); //Flush the Tx FIFO  if not will full
-  // Clear semaphore flag
-      packetSemaphore = ISR_IDLE;
-  temp = interruptCount;
-  delay(200);
-//  printf("%d\n", interruptCount);
+		cc120x_WriteStrobe(SNOP);
+		cc120x_WriteStrobe(SNOP);
+		// Wait for interrupt that packet has been sent.
+		// (Assumes the GPIO connected to the radioRxTxISR function is
+		// set to GPIOx_CFG = 0x06)
+		while (packetSemaphore != ISR_ACTION_REQUIRED)
+		{
 
 
-} //end of while(true)
+			GPIO_PinState s1 = HAL_GPIO_ReadPin(G2_GPIO_Port, G2_Pin);
+			if (s1 == GPIO_PIN_SET)
+			{
+				packetSemaphore = ISR_ACTION_REQUIRED;
+				while(s1 == GPIO_PIN_SET)
+					s1 = HAL_GPIO_ReadPin(G2_GPIO_Port, G2_Pin);
+			}
+		}
 
-/* USER CODE END 0 */
+		// Clear semaphore flag
+		packetSemaphore = ISR_IDLE;
+
+	}
+}
+void createPacket(uint8_t txBuffer[])
+{
+
+	txBuffer[0] = PKTLEN;                           // Length byte
+	txBuffer[1] = (uint8_t) (packetCounter >> 8);     // MSB of packetCounter
+	txBuffer[2] = (uint8_t) packetCounter;           // LSB of packetCounter
+
+	// Fill rest of buffer with random bytes
+	for (uint8_t i = 3; i < (PKTLEN + 1); i++)
+	{
+		txBuffer[i] = (uint8_t) i;
+	}
+}
+
+
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
-	/* USER CODE BEGIN 1 */
-	/* USER CODE END 1 */
+  /* USER CODE BEGIN 1 */
+  /* USER CODE END 1 */
 
-	/* MCU Configuration--------------------------------------------------------*/
 
-	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+  /* MCU Configuration--------------------------------------------------------*/
 
-	/* USER CODE BEGIN Init */
-	/* USER CODE END Init */
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
 
-	/* Configure the system clock */
-	SystemClock_Config();
+  /* USER CODE BEGIN Init */
+  /* USER CODE END Init */
 
-	/* USER CODE BEGIN SysInit */
-	/* USER CODE END SysInit */
+  /* Configure the system clock */
+  SystemClock_Config();
 
-	/* Initialize all configured peripherals */
-	MX_GPIO_Init();
-	MX_SPI3_Init();
-	MX_USART1_UART_Init();
-	/* USER CODE BEGIN 2 */
+  /* USER CODE BEGIN SysInit */
+  /* USER CODE END SysInit */
 
-	/* USER CODE END 2 */
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_SPI3_Init();
+  MX_USART1_UART_Init();
+  /* USER CODE BEGIN 2 */
 
-	/* Infinite loop */
-	/* USER CODE BEGIN WHILE */
+  /* USER CODE END 2 */
+
+
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
 	cc120x_Init(hspi3, GPIOA, GPIO_PIN_4);
 	cc120x_WriteStrobe(SRES);
 	HAL_Delay(100);
@@ -276,70 +264,69 @@ int main(void)
 	{
 //RX();
 //TX();
-runTX();
+		runRX();
 
+		//runTX();
 	}
-	/* USER CODE END WHILE */
+    /* USER CODE END WHILE */
 
-	/* USER CODE BEGIN 3 */
-	/* USER CODE END 3 */
+    /* USER CODE BEGIN 3 */
+  /* USER CODE END 3 */
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
-	RCC_OscInitTypeDef RCC_OscInitStruct =
-	{ 0 };
-	RCC_ClkInitTypeDef RCC_ClkInitStruct =
-	{ 0 };
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-	/** Configure the main internal regulator output voltage
-	 */
-	__HAL_RCC_PWR_CLK_ENABLE();
-	__HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-	/** Initializes the CPU, AHB and APB busses clocks
-	 */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-	RCC_OscInitStruct.PLL.PLLM = 25;
-	RCC_OscInitStruct.PLL.PLLN = 400;
-	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
-	RCC_OscInitStruct.PLL.PLLQ = 4;
-	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	/** Initializes the CPU, AHB and APB busses clocks
-	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  /** Configure the main internal regulator output voltage
+  */
+  __HAL_RCC_PWR_CLK_ENABLE();
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+  /** Initializes the CPU, AHB and APB busses clocks
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 25;
+  RCC_OscInitStruct.PLL.PLLN = 400;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
+  RCC_OscInitStruct.PLL.PLLQ = 4;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Initializes the CPU, AHB and APB busses clocks
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
-	{
-		Error_Handler();
-	}
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /* USER CODE BEGIN 4 */
 /* USER CODE END 4 */
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
-	/* USER CODE BEGIN Error_Handler_Debug */
-	/* USER CODE END Error_Handler_Debug */
+  /* USER CODE BEGIN Error_Handler_Debug */
+  /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
