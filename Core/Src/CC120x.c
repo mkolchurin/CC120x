@@ -201,7 +201,26 @@ void cc120x_WriteSettings(/*registerSetting_t *registerSettings*/)
 	}
 
 }
+uint8_t cc120x_ReadSettings()
+{
 
+	uint8_t settingsSize = (sizeof(preferredSettings)
+			/ sizeof((preferredSettings)[0]));
+	for (uint8_t i = 0; i < settingsSize; i++)
+	{
+		uint8_t value = 0;
+		uint16_t address = preferredSettings[i].addr;
+		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, address, 0, &value,
+				1);
+		uint8_t val = preferredSettings[i].data;
+		if(value != val)
+			return 0;
+
+
+	}
+	return (1);
+
+}
 //void cc120x_WriteSettings1(const struct registerSetting_t registerSettings1[])
 //{
 //	const registerSetting_t * registerSettings = *&registerSettings1;
