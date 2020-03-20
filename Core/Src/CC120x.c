@@ -214,7 +214,7 @@ uint8_t cc120x_ReadSettings()
 				1);
 		uint8_t val = preferredSettings[i].data;
 		if(value != val)
-			return 0;
+			HAL_Delay(100);
 
 
 	}

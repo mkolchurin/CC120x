@@ -69,11 +69,11 @@ void runRX(void)
 	cc120x_WriteStrobe(SFRX);
 	HAL_Delay(10);
 	cc120x_WriteStrobe(SRX);
-
+	cc120x_WriteStrobe(SRX);
 	// Infinite loop
 	while (1)
 	{
-
+		cc120x_WriteStrobe(SNOP);
 		GPIO_PinState s0 = HAL_GPIO_ReadPin(G0_GPIO_Port, G0_Pin);
 		GPIO_PinState s2 = HAL_GPIO_ReadPin(G2_GPIO_Port, G2_Pin);
 		GPIO_PinState s3 = HAL_GPIO_ReadPin(G3_GPIO_Port, G3_Pin);
@@ -179,7 +179,7 @@ void runRX(void)
 #define ISR_ACTION_REQUIRED 1
 #define ISR_IDLE            0
 
-#define PKTLEN              100 // 1 < PKTLEN < 126
+#define PKTLEN              5 // 1 < PKTLEN < 126
 void runTX(void)
 {
 
@@ -295,6 +295,8 @@ int main(void)
 
 	cc120x_WriteSettings();
 	HAL_Delay(100);
+
+	cc120x_WriteStrobe(SAFC);
 	while (1)
 	{
 
@@ -302,9 +304,9 @@ int main(void)
 		{
 			HAL_Delay(10);
 		}
-		//runRX();
+		runRX();
 
-		runTX();
+		//runTX();
 	}
 	/* USER CODE END WHILE */
 
