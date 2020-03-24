@@ -103,10 +103,6 @@ void runRX(void)
 		// Wait for packet received interrupt
 		if (packetSemaphore == ISR_ACTION_REQUIRED)
 		{
-			uint8_t rssi[] =
-			{ 0, 0 };
-			cc120xSpiReadReg((uint16_t) RSSI0, &rssi[0], 1);
-			cc120xSpiReadReg((uint16_t) RSSI1, &rssi[1], 1);
 
 //			while (s0 == GPIO_PIN_SET || s2 == GPIO_PIN_SET
 //					|| s3 == GPIO_PIN_SET)
@@ -139,8 +135,19 @@ void runRX(void)
 					// Read n bytes from RX FIFO
 					cc120xSpiReadReg((uint16_t) 0x3F, &rxBuffer, rxBytes);
 
-
-//					for(uint8_t i = 0; i < 127; i++){
+					uint8_t rssi0 = 0, rssi1 = 0;
+					cc120xSpiReadReg((uint16_t) RSSI0, &rssi0, 1);
+					cc120xSpiReadReg((uint16_t) RSSI1, &rssi1, 1);
+					float rssi = 0;
+					if ((rssi0 & 0b00000001) == 1)
+					{
+						rssi = (rssi1 << 4) + (rssi0 & 0b01111000);
+						rssi = ((rssi / 16) - 128);
+					}
+					uint8_t* str = 0;
+					sprintf (str, "%f", rssi);
+					HAL_UART_Transmit(&huart1, str , sizeof(str), 0xFF);
+//					//for(uint8_t i = 0; i < 127; i++){
 //						cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, (uint16_t)(0x00 + i), 0, &rxBuffer[i], 1);
 //					}
 
@@ -304,9 +311,9 @@ int main(void)
 		{
 			HAL_Delay(10);
 		}
-		runRX();
+		//runRX();
 
-		//runTX();
+		runTX();
 	}
 	/* USER CODE END WHILE */
 
