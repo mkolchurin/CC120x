@@ -218,49 +218,46 @@ typedef struct
 	uint8_t data;
 } registerSetting_t;
 
-
-
-
-
-
-
-
-
-
-
-
 static const registerSetting_t preferredSettings[]=
 {
   {IOCFG2,            0x06},
   {IOCFG0,            0x06},
-  {MODCFG_DEV_E,      0x02},
-  {DCFILT_CFG,        0x5D},
-  {PREAMBLE_CFG0,     0x8A},
-  {IQIC,              0xCB},
-  {CHAN_BW,           0x50},
-  {MDMCFG1,           0x40},
-  {SYMBOL_RATE2,      0x3F},
-  {SYMBOL_RATE1,      0x75},
-  {SYMBOL_RATE0,      0x10},
-  {AGC_REF,           0x23},
+  {SYNC2,             0xAA},
+  {SYNC1,             0xAA},
+  {SYNC0,             0xAA},
+  {SYNC_CFG1,         0x6B},
+  {DEVIATION_M,       0xD7},
+  {MODCFG_DEV_E,      0x1A},
+  {DCFILT_CFG,        0x13},
+  {PREAMBLE_CFG1,     0x20},
+  {PREAMBLE_CFG0,     0xE3},
+  {IQIC,              0x80},
+  {CHAN_BW,           0x4B},
+  {MDMCFG1,           0x66},
+  {MDMCFG0,           0x02},
+  {SYMBOL_RATE2,      0x4A},
+  {SYMBOL_RATE1,      0x36},
+  {SYMBOL_RATE0,      0xE3},
+  {AGC_REF,           0x40},
   {AGC_CS_THR,        0xEC},
-  {AGC_CFG1,          0x51},
-  {AGC_CFG0,          0xC7},
+  {AGC_CFG3,          0x31},
+  {AGC_CFG1,          0x24},
+  {AGC_CFG0,          0x9F},
   {FIFO_CFG,          0x00},
   {FS_CFG,            0x14},
   {PKT_CFG2,          0x00},
-  {PKT_CFG0,          0x20},
-  {PKT_LEN,           0xFF},
+  {ASK_CFG,           0xBF},
+  {PKT_LEN,           0x40},
   {IF_MIX_CFG,        0x1C},
-  {FREQOFF_CFG,       0x22},
-  {MDMCFG2,           0x0C},
+  {FREQOFF_CFG,       0x00},
+  {MDMCFG2,           0xFC},
   {FREQ2,             0x56},
   {FREQ1,             0xCC},
   {FREQ0,             0xCC},
   {IF_ADC1,           0xEE},
   {IF_ADC0,           0x10},
   {FS_DIG1,           0x07},
-  {FS_DIG0,           0xAA},
+  {FS_DIG0,           0xA0},
   {FS_CAL1,           0x40},
   {FS_CAL0,           0x0E},
   {FS_DIVTWO,         0x03},
@@ -271,7 +268,7 @@ static const registerSetting_t preferredSettings[]=
   {FS_REG_DIV_CML,    0x1C},
   {FS_SPARE,          0xAC},
   {FS_VCO0,           0xB5},
-  {IFAMP,             0x05},
+  {IFAMP,             0x09},
   {XOSC5,             0x0E},
   {XOSC1,             0x03},
 };

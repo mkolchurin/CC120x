@@ -142,7 +142,7 @@ void runRX(void)
 					if ((rssi0 & 0b00000001) == 1)
 					{
 						rssi = (rssi1 << 4) + (rssi0 & 0b01111000);
-						rssi = ((rssi / 16) - 128);
+						rssi = (rssi * 0.0625) - 128;
 					}
 					uint8_t* str = 0;
 					sprintf (str, "%f", rssi);
@@ -178,6 +178,7 @@ void runRX(void)
 			packetSemaphore = ISR_IDLE;
 
 			// Set radio back in RX
+			cc120x_WriteStrobe(SFRX);
 			cc120x_WriteStrobe(SRX);
 		}
 	}
@@ -311,7 +312,7 @@ int main(void)
 		{
 			HAL_Delay(10);
 		}
-		//runRX();
+		runRX();
 
 		runTX();
 	}
