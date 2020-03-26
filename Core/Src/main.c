@@ -3,6 +3,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "i2c.h"
 #include "spi.h"
 #include "usart.h"
 #include "gpio.h"
@@ -70,21 +71,22 @@ void runRX(void)
 	HAL_Delay(10);
 	cc120x_WriteStrobe(SRX);
 	cc120x_WriteStrobe(SRX);
+
 	// Infinite loop
 	while (1)
 	{
 		cc120x_WriteStrobe(SNOP);
 		GPIO_PinState s0 = HAL_GPIO_ReadPin(G0_GPIO_Port, G0_Pin);
-		GPIO_PinState s2 = HAL_GPIO_ReadPin(G2_GPIO_Port, G2_Pin);
+//		GPIO_PinState s2 = HAL_GPIO_ReadPin(G2_GPIO_Port, G2_Pin);
 		GPIO_PinState s3 = HAL_GPIO_ReadPin(G3_GPIO_Port, G3_Pin);
-		if (s0 == GPIO_PIN_SET || s3 == GPIO_PIN_SET || s3 == GPIO_PIN_SET)
+		if (s0 == GPIO_PIN_SET || s3 == GPIO_PIN_SET /*|| s3 == GPIO_PIN_SET*/)
 		{
 			packetSemaphore = 1;
-			while (s0 == GPIO_PIN_SET || s2 == GPIO_PIN_SET
-					|| s3 == GPIO_PIN_SET)
+			while (s0 == GPIO_PIN_SET /*|| s2 == GPIO_PIN_SET*/
+			|| s3 == GPIO_PIN_SET)
 			{
 				s0 = HAL_GPIO_ReadPin(G0_GPIO_Port, G0_Pin);
-				s2 = HAL_GPIO_ReadPin(G2_GPIO_Port, G2_Pin);
+				/*s2 = HAL_GPIO_ReadPin(G2_GPIO_Port, G2_Pin);*/
 				s3 = HAL_GPIO_ReadPin(G3_GPIO_Port, G3_Pin);
 			}
 //			if (cc120x_WriteStrobe(SNOP) == 0x6F)
@@ -144,9 +146,9 @@ void runRX(void)
 						rssi = (rssi1 << 4) + (rssi0 & 0b01111000);
 						rssi = (rssi * 0.0625) - 128;
 					}
-					uint8_t* str = 0;
-					sprintf (str, "%f", rssi);
-					HAL_UART_Transmit(&huart1, str , sizeof(str), 0xFF);
+					uint8_t *str = 0;
+					sprintf(str, "%f", rssi);
+					HAL_UART_Transmit(&huart1, str, sizeof(str), 0xFF);
 //					//for(uint8_t i = 0; i < 127; i++){
 //						cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, (uint16_t)(0x00 + i), 0, &rxBuffer[i], 1);
 //					}
@@ -261,6 +263,7 @@ void createPacket(uint8_t txBuffer[])
 	}
 }
 
+static uint8_t cc120x_redyToTranfmitt = 1;
 /* USER CODE END 0 */
 
 /**
@@ -290,31 +293,56 @@ int main(void)
 	MX_GPIO_Init();
 	MX_SPI3_Init();
 	MX_USART1_UART_Init();
+	MX_I2C1_Init();
 	/* USER CODE BEGIN 2 */
 
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
-	HAL_Delay(500);
 	cc120x_Init(hspi3, GPIOA, GPIO_PIN_4);
-	cc120x_WriteStrobe(SRES);
-	HAL_Delay(500);
 
 	cc120x_WriteSettings();
-	HAL_Delay(100);
 
-	cc120x_WriteStrobe(SAFC);
+	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+	HAL_Delay(1000);
+	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+
+	if (!cc120x_ReadSettings())
+	{
+		HAL_Delay(10);
+	}
+	cc120x_WriteStrobe(SNOP);
 	while (1)
 	{
-
-		if (!cc120x_ReadSettings())
+		if (cc120x_redyToTranfmitt == 1)
 		{
-			HAL_Delay(10);
+			uint8_t * pTxData =
+			{ 0, 1, 2, 3, 4, 5 };
+			if (1 == cc120x_TransmittData(&pTxData, sizeof(pTxData)))
+				cc120x_redyToTranfmitt = 0;
 		}
-		runRX();
+		/*
+		 uint8_t DevAddress = 0b11100011;
+		 uint8_t *pData = 0;
 
-		runTX();
+		 while (HAL_I2C_Master_Transmit(&hi2c1, (uint16_t) DevAddress,
+		 (uint8_t*) &pData, (uint16_t) sizeof(pData), (uint32_t) 1000)
+		 != HAL_OK)
+
+		 {
+		 }
+
+		 while (HAL_I2C_Master_Receive(&hi2c1, (uint16_t) DevAddress,
+		 (uint8_t*) &pData, (uint16_t) sizeof(pData), (uint32_t) 1000)
+		 != HAL_OK)
+		 {
+
+		 }
+		 */
+
+		//runRX();
+		//runTX();
 	}
 	/* USER CODE END WHILE */
 
@@ -367,6 +395,18 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if (GPIO_Pin == G2_Pin)
+	{
+		cc120x_redyToTranfmitt = 1;
+//		uint8_t *pData;
+//		cc120x_ReceiveData(pData);
+//		HAL_Delay(100);
+	}
+}
+
 /* USER CODE END 4 */
 
 /**

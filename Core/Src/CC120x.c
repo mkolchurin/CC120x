@@ -52,6 +52,15 @@ void cc120x_Init(SPI_HandleTypeDef hspi, GPIO_TypeDef *GPIOPort,
 	GPIO_Pin = GPIOPin;
 	MX_SPI3_Init();
 	cs_high();
+	cc120x_WriteStrobe(SRES);
+	uint8_t pData = 0;
+	do
+	{
+		cs_low();
+		spi_receive(&pData, 1);
+		cs_high();
+	} while ((pData & 0x80) == 0x80);
+
 	return;
 }
 
@@ -148,8 +157,8 @@ void cc120xSpiWriteReg(uint16_t address, uint8_t *tx, uint16_t size)
 {
 	cc120x_RegAccess(CC120x_Write, CC120x_burstAccess, address, tx, 0, size);
 }
-/*
- uint8_t * cc120x_TransmitData(uint8_t *txBuffer)
+
+/*uint8_t* cc120x_TransmitData(uint8_t *txBuffer)
  {
  uint8_t length = sizeof(txBuffer) / sizeof(txBuffer[0]);
 
@@ -160,17 +169,17 @@ void cc120xSpiWriteReg(uint16_t address, uint8_t *tx, uint16_t size)
  StdFIFO, txBuffer, length);
 
  cc120x_WriteStrobe(STX);
-
- TODO GPIO input?
  return (CC120x_data);
- }
- uint8_t * cc120x_ReceiveData(void)
+ }*/
+
+/*
+ uint8_t* cc120x_ReceiveData(void)
  {
  uint8_t length = cc120x_ReadSingleReg(FIFO_NUM_RXBYTES).CC120x_Received[0];
- return (cc120x_RegAccess(CC120x_Read, CC120x_burstAccess, StdFIFO, NULL,
- length));
+ return (cc120x_RegAccess(CC120x_Read, CC120x_burstAccess, StdFIFO, NULL, length));
  }
  */
+
 uint8_t cc120x_WriteStrobe(uint8_t command)
 {
 	return (cc120x_RegAccess(CC120x_Write, CC120x_SingleAccess, command, NULL,
@@ -208,12 +217,12 @@ uint8_t cc120x_ReadSettings()
 			/ sizeof((preferredSettings)[0]));
 	for (uint8_t i = 0; i < settingsSize; i++)
 	{
-		uint8_t value = 0;
+		uint8_t rxvalue = 0;
 		uint16_t address = preferredSettings[i].addr;
-		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, address, 0, &value,
+		cc120x_RegAccess(CC120x_Read, CC120x_SingleAccess, address, 0, &rxvalue,
 				1);
-		uint8_t val = preferredSettings[i].data;
-		if (value != val)
+		uint8_t setting_value = preferredSettings[i].data;
+		if (rxvalue != setting_value)
 			HAL_Delay(100);
 
 	}
@@ -221,124 +230,73 @@ uint8_t cc120x_ReadSettings()
 
 }
 
-/*
-
-#define ISR_ACTION_REQUIRED 1
-#define ISR_IDLE            0
-#define RX_FIFO_ERROR       0x11
-uint8_t cc120x_ReceiveData(uint8_t *pRxData)
+uint8_t cc120x_RSSI(void)
 {
-	uint8_t rxSize;
-	uint8_t marcState;
+	uint8_t rssi0 = 0, rssi1 = 0;
+	cc120xSpiReadReg((uint16_t) RSSI0, &rssi0, 1);
+	cc120xSpiReadReg((uint16_t) RSSI1, &rssi1, 1);
+	float rssi = 0;
+	if ((rssi0 & 0b00000001) == 1)
+	{
+		rssi = (rssi1 << 4) + (rssi0 & 0b01111000);
+		rssi = (rssi * 0.0625) - 128;
+	}
+	return (rssi);
+}
+/// @return number of bytes in RX buffer
+uint8_t cc120x_NumRxBytes(void)
+{
+	uint8_t rxSize = 0;
 	cc120xSpiReadReg(NUM_RXBYTES, &rxSize, 1);
-	uint8_t rxBuffer[rxSize] =
-		{ 0 };
+	return (rxSize);
+}
+
+#define RX_FIFO_ERROR       0x11
+uint8_t cc120x_ReceiveData(uint8_t *pData)
+{
+	uint8_t rxSize = cc120x_NumRxBytes();
+	uint8_t *rxBuffer =
+	{ 0 };
 	// Check that we have bytes in FIFO
 	if (rxSize != 0)
 	{
 
-		// Read MARCSTATE to check for RX FIFO error
-		cc120xSpiReadReg(MARCSTATE, &marcState, 1);
-
-		// Mask out MARCSTATE bits and check if we have a RX FIFO error
-		if ((marcState & 0x1F) == RX_FIFO_ERROR)
-		{
-
-			// Flush RX FIFO
-			cc120x_WriteStrobe(SFRX);
-		}
-		else
-		{
-
-			// Read n bytes from RX FIFO
-			cc120xSpiReadReg((uint16_t) 0x3F, &rxBuffer, rxSize);
-
-			uint8_t rssi0 = 0, rssi1 = 0;
-			cc120xSpiReadReg((uint16_t) RSSI0, &rssi0, 1);
-			cc120xSpiReadReg((uint16_t) RSSI1, &rssi1, 1);
-			float rssi = 0;
-			if ((rssi0 & 0b00000001) == 1)
-			{
-				rssi = (rssi1 << 4) + (rssi0 & 0b01111000);
-				rssi = ((rssi / 16) - 128);
-			}
-			uint8_t *str = 0;
-			sprintf(str, "%f", rssi);
-			HAL_UART_Transmit(&huart1, str, sizeof(str), 0xFF);
-
-			cc120x_WriteStrobe(SFRX);
-
-			if (rxBuffer[rxSize - 1] & 0x80)
-			{
-
-				// Update packet counter
-				packetCounter++;
-
-			}
-			for (int i = 0; i < rxSize; i++)
-				rxBuffer[i] = 0;
-		}
-
+		// Read n bytes from RX FIFO
+		cc120xSpiReadReg((uint16_t) 0x3F, &rxBuffer, rxSize);
+		pData = rxBuffer;
+		for (int i = 0; i < rxSize; i++)
+			rxBuffer[i] = 0;
 	}
 	else
+	{
 		cc120x_WriteStrobe(SFRX);
-
-	// Reset packet semaphore
-	packetSemaphore = ISR_IDLE;
-
+		return (1);
+	}
 	// Set radio back in RX
 	cc120x_WriteStrobe(SRX);
+
 	return (0);
 }
-
-#define ISR_ACTION_REQUIRED 1
-#define ISR_IDLE            0
 
 /// @param pTxData TX data array
 /// @param size TX data size
 /// @return status; 1 transmitted; 0 error;
-uint8_t cc120x_TransmittData(uint8_t *pTxData, uint8_t size)
+uint8_t cc120x_TransmittData(uint8_t **pTxData, uint8_t size)
 {
-
-	//TODO check if GPIO is 0x06
-	if (cc120x_WriteStrobe(SNOP) == 0x7F)
-	{
-		cc120x_WriteStrobe(SFTX);
-		cc120x_WriteStrobe(STX);
-	}
-
+	uint8_t * buf = *pTxData;
 	// Write packet to TX FIFO
-	cc120xSpiWriteReg(0x3F, pTxData, size);
+	cc120xSpiWriteReg(0x3F, buf, size);
 
 	// Strobe TX to send packet
 	cc120x_WriteStrobe(STX);
-	cc120x_WriteStrobe(SNOP);
 
-	while (packetSemaphore != ISR_ACTION_REQUIRED)
+	if (cc120x_WriteStrobe(SNOP) == 0x7F)
 	{
-		if (cc120x_WriteStrobe(SNOP) == 0x7F)
-		{
-			return (0);
-//					cc120x_WriteStrobe(SFTX);
-//					cc120x_WriteStrobe(STX);
-		}
-		GPIO_PinState s1 = HAL_GPIO_ReadPin(G3_GPIO_Port, G3_Pin);
-
-		if (s1 == GPIO_PIN_SET)
-		{
-			packetSemaphore = ISR_ACTION_REQUIRED;
-			while (s1 == GPIO_PIN_SET)
-			{
-				cc120x_WriteStrobe(SNOP);
-				s1 = HAL_GPIO_ReadPin(G3_GPIO_Port, G3_Pin);
-			}
-			return (1);
-		}
+		cc120x_WriteStrobe(SFTX);
+		return (0x7F);
 	}
-	return (0);
+	return (1);
 }
-
-*/
 
 //void cc120x_WriteSettings1(const struct registerSetting_t registerSettings1[])
 //{
@@ -356,7 +314,6 @@ uint8_t cc120x_TransmittData(uint8_t *pTxData, uint8_t size)
 //	}
 //
 //}
-
 /*
  uint8_t* cc120x_WriteBurstReg(uint16_t startAddress, uint8_t *value,
  uint16_t length)

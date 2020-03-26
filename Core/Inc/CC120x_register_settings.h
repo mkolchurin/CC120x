@@ -220,8 +220,9 @@ typedef struct
 
 static const registerSetting_t preferredSettings[]=
 {
-  {IOCFG2,            0x06},
   {IOCFG0,            0x06},
+  {IOCFG2,            0x06},
+  {IOCFG3,            0x06},
   {SYNC2,             0xAA},
   {SYNC1,             0xAA},
   {SYNC0,             0xAA},
