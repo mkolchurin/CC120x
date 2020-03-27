@@ -230,6 +230,12 @@ uint8_t cc120x_ReadSettings()
 
 }
 
+uint8_t cc120x_beginReceive(void)
+{
+	cc120x_WriteStrobe(SFRX);
+	return (cc120x_WriteStrobe(SRX));
+}
+
 uint8_t cc120x_RSSI(void)
 {
 	uint8_t rssi0 = 0, rssi1 = 0;
@@ -252,20 +258,20 @@ uint8_t cc120x_NumRxBytes(void)
 }
 
 #define RX_FIFO_ERROR       0x11
-uint8_t cc120x_ReceiveData(uint8_t *pData)
+uint8_t cc120x_ReceiveData(uint8_t *pData, uint8_t size)
 {
-	uint8_t rxSize = cc120x_NumRxBytes();
+//	uint8_t rxSize = cc120x_NumRxBytes();
 	uint8_t *rxBuffer =
 	{ 0 };
 	// Check that we have bytes in FIFO
-	if (rxSize != 0)
+	if (size != 0)
 	{
 
 		// Read n bytes from RX FIFO
-		cc120xSpiReadReg((uint16_t) 0x3F, &rxBuffer, rxSize);
-		pData = rxBuffer;
-		for (int i = 0; i < rxSize; i++)
-			rxBuffer[i] = 0;
+		cc120xSpiReadReg((uint16_t) 0x3F, pData, size);
+		//pData = rxBuffer;
+//		for (int i = 0; i < rxSize; i++)
+//			rxBuffer[i] = 0;
 	}
 	else
 	{
@@ -283,18 +289,27 @@ uint8_t cc120x_ReceiveData(uint8_t *pData)
 /// @return status; 1 transmitted; 0 error;
 uint8_t cc120x_TransmittData(uint8_t **pTxData, uint8_t size)
 {
-	uint8_t * buf = *pTxData;
+
+	uint8_t txSize = 1;
+	do
+	{
+		cc120xSpiReadReg(NUM_TXBYTES, &txSize, 1);
+		if(txSize!= 0) 	cc120x_WriteStrobe(STX);
+	} while (txSize != 0);
+//	cc120x_WriteStrobe(SNOP);
+//	HAL_Delay(2);
+	uint8_t *txData = *pTxData;
 	// Write packet to TX FIFO
-	cc120xSpiWriteReg(0x3F, buf, size);
+	cc120xSpiWriteReg(0x3F, pTxData, size);
 
 	// Strobe TX to send packet
 	cc120x_WriteStrobe(STX);
-
 	if (cc120x_WriteStrobe(SNOP) == 0x7F)
 	{
 		cc120x_WriteStrobe(SFTX);
 		return (0x7F);
 	}
+
 	return (1);
 }
 
