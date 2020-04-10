@@ -245,7 +245,7 @@ uint8_t cc120x_RSSI(void)
 	if ((rssi0 & 0b00000001) == 1)
 	{
 		rssi = (rssi1 << 4) + (rssi0 & 0b01111000);
-		rssi = (rssi * 0.0625) - 128;
+		rssi = (rssi * 0.0625) /*- 128*/;
 	}
 	return (rssi);
 }
