@@ -11,7 +11,9 @@
 #include "stm32f4xx_hal.h"
 #include "spi.h"
 #include "stdlib.h"
-
+#include <stdbool.h>
+//#include <stddef.h>
+//#include <stdint.h>
 
 //TODO redefine types
 
