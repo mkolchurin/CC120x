@@ -83,51 +83,57 @@ int main(void) {
 	HAL_Delay(100);
 	cc120x_beginReceive();
 
-	uint8_t bufsize = 254;
-	uint8_t *buffer = malloc(bufsize);
+	uint8_t bufsize = 128;
+	uint8_t buffer[bufsize];
 	message_t message;
-	message_t response;
-
+	for (int i = 0; i < bufsize; i++)
+		buffer[i] = 0;
+	rftoolsPacket_t packet;
+	uint8_t dataIsOK = 0;
 	while (1) {
-		for (int i = 0; i < bufsize; i++)
-			buffer[i] = 0;
-		if (HAL_UART_Receive(&huart1, buffer, bufsize, 0xFF) != HAL_OK) {
-			if (buffer[9] == 255)
-				buffer[9] = 0;
 
-			message.command = 255;
-			deserialize(buffer, &message);
-			if (buffer[0] != 0) {
-				HAL_Delay(1);
+		//uint8_t offset = 0;
+
+		while (dataIsOK == 0) {
+			if (HAL_UART_Receive(&huart1, buffer, PACKET_LENGTH, 0xff)
+					== HAL_OK) {
+				dataIsOK = getPacket(buffer, &packet);
+//				break;
+//			else
+//				HAL_UART_Abort(&huart1);
+
+				if (dataIsOK > 0)
+					{HAL_UART_Transmit(&huart1, (uint8_t*) ASK, sizeof(ASK),
+							0x10);
+					dataIsOK = 0;
+					}
+//				break;
 			}
+		}
+
+		if (dataIsOK > 0) {
+			dataIsOK = 0;
+			HAL_UART_Transmit(&huart1, (uint8_t*) ASK, sizeof(ASK), 0x10);
+			message_t *ptrMessage = &message;
+			uint8_t messageSize = deserialize(packet.Data,
+					(message_t*) ptrMessage);
+
 			if (message.command == RFTOOLS_COMMAND_REGISTER) {
 				uint16_t naddress = ((uint16_t) message.address[0] << 8)
 						| message.address[1];
 				cc120x_WriteSingleRegister((uint16_t) naddress,
 						message.data[0]);
-
-				response.command = RFTOOLS_COMMAND_RESPONSE;
-				response.data[0] = (uint8_t) true;
-				uint8_t *buf = malloc(128);
-				serialize(response, (uint8_t**) &buf);
-				uint8_t length = sizeof(message_t);
-				HAL_UART_Transmit(&huart1, buf, length, 0xff);
-				HAL_UART_Transmit(&huart1, (uint8_t*) "\n\n\n", 3, 0xff);
-				HAL_Delay(1);
 			}
-
-			response.command = RFTOOLS_COMMAND_RESPONSE;
-			response.data[0] = (uint8_t) false;
-			serialize(response, (uint8_t**) &buffer);
-			uint8_t length = sizeof(message_t);
-			HAL_UART_Transmit(&huart1, buffer, length, 0xff);
-			HAL_UART_Transmit(&huart1, (uint8_t*) "\n\n\n", 3, 0xff);
-
+			if (message.command == RFTOOLS_COMMAND_STROBE) {
+				cc120x_WriteStrobe(message.data[0]);
+			}
 
 		}
 
-		uint8_t rssi = cc120x_RSSI();
-		HAL_Delay(2);
+//		uint8_t rssi = cc120x_RSSI();
+//		uint8_t size = cc120x_NumRxBytes();
+//	if(size != 0 )
+//		HAL_Delay(2);
 	}
 	/* USER CODE END WHILE */
 
@@ -180,40 +186,35 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (GPIO_Pin == G3_EXTI_Pin) {
 		cc120x_redyToTranfmitt = 1;
 		uint8_t size = cc120x_NumRxBytes();
-		//size = 254;
+		//size = 54;
 		uint8_t pData[size];
 		for (int i = 0; i < size; i++)
 			pData[i] = 0;
 
 		chip_status_t receive_status = cc120x_ReceiveData(&pData, size);
+		uint8_t rssi = cc120x_RSSI();
 
+//		cc120x_WriteStrobe(STX);
 		cc120x_WriteStrobe(SIDLE);
-		cc120x_WriteStrobe(STX);
-		cc120x_WriteStrobe(SFTX);
-		receive_status = cc120x_WriteStrobe(STX);
-		receive_status = cc120x_WriteStrobe(SNOP);
+		cc120x_WriteStrobe(SFRX);
+//		HAL_Delay(100);
 
-		cc120x_TransmittData(pData, size);
-		receive_status = cc120x_WriteStrobe(SNOP);
+//		cc120x_WriteStrobe(SFTX);
+//		receive_status = cc120x_WriteStrobe(STX);
+//		receive_status = cc120x_WriteStrobe(SNOP);
+
+//cc120x_TransmittData(pData, size);
+
+//		uint8_t nnl[] = { 134, 170, 105, 150, 166, 169, 170, 170, 85, 90, 13,
+//				84, 211, 45, 77, 83, 85, 84, 170, 180, 0, 0, 0, 0, 0, 0, 7, };
+//		cc120x_TransmittData(pData, size);
+//		receive_status = cc120x_WriteStrobe(SNOP);
+		cc120x_WriteStrobe(SRX);
 		//		cc120x_WriteStrobe(SFRX);
 		//		cc120x_WriteStrobe(SIDLE);
-		receive_status = cc120x_beginReceive();
-		message_t message;
-		message.command = 2;
-		sprintf(message.data, "hello, world!");
-		message.data_length = sizeof(message.data);
-		message.address[0] = 0xAB;
-		message.address[1] = 0xAC;
+//		receive_status = cc120x_beginReceive();
 
-		uint8_t *buffer = malloc(128);
-		uint8_t length = serialize(message, &buffer);
-
-		message_t message1;
-		deserialize(buffer, &message1);
-
-		HAL_UART_Transmit(&huart1, buffer, length, 0xff);
-		HAL_UART_Transmit(&huart1, (uint8_t*) "\n\n\n", 3, 0xff);
-		//uart_transmit(size, 1, pData);
+		//main();
 	}
 }
 

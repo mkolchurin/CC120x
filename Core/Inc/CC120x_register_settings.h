@@ -212,8 +212,7 @@
 #define AES_BUFFER1 0x2FFE //Advanced Encryption Standard Buffer [15:8]
 #define AES_BUFFER0 0x2FFF //Advanced Encryption Standard Buffer [7:0]
 
-typedef struct
-{
+typedef struct {
 	uint16_t addr;
 	uint8_t data;
 } registerSetting_t;
@@ -278,27 +277,27 @@ typedef struct
 //};
 
 
+
 static const registerSetting_t preferredSettings[]=
 {
   {IOCFG2,            0x06},
+  {IOCFG0,            0x06},
   {SYNC3,             0xAA},
   {SYNC2,             0xAA},
   {SYNC1,             0xAA},
   {SYNC0,             0xAA},
-  {SYNC_CFG1,         0xAC},
   {DEVIATION_M,       0xD7},
   {MODCFG_DEV_E,      0x1A},
   {DCFILT_CFG,        0x13},
-  {PREAMBLE_CFG1,     0x20},
+  {PREAMBLE_CFG1,     0x34},
   {PREAMBLE_CFG0,     0xE3},
-  {IQIC,              0x80},
-  {CHAN_BW,           0x4B},
-  {MDMCFG1,           0x66},
+  {IQIC,              0x00},
+  {CHAN_BW,           0x0B},
   {MDMCFG0,           0x02},
   {SYMBOL_RATE2,      0x4A},
   {SYMBOL_RATE1,      0x36},
   {SYMBOL_RATE0,      0xE3},
-  {AGC_REF,           0x40},
+  {AGC_REF,           0x43},
   {AGC_CS_THR,        0xEC},
   {AGC_CFG3,          0x31},
   {AGC_CFG1,          0x24},
@@ -306,14 +305,15 @@ static const registerSetting_t preferredSettings[]=
   {FIFO_CFG,          0x00},
   {FS_CFG,            0x14},
   {PKT_CFG2,          0x00},
+  {PA_CFG1,           0x3F},
   {ASK_CFG,           0xBF},
-  {PKT_LEN,           0x1E},
+  {PKT_LEN,           0xC8},
   {IF_MIX_CFG,        0x1C},
-  {FREQOFF_CFG,       0x00},
+  {FREQOFF_CFG,       0x10},
   {MDMCFG2,           0xFC},
   {FREQ2,             0x56},
-  {FREQ1,             0xCC},
-  {FREQ0,             0xCC},
+  {FREQ1,             0xC8},
+  {FREQ0,             0xB4},
   {IF_ADC1,           0xEE},
   {IF_ADC0,           0x10},
   {FS_DIG1,           0x07},
